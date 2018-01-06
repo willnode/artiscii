@@ -13,17 +13,17 @@
         <span id="heads">
         </span>
         <span id="palette">''</span>
-        <span id="resize"> Resize
+        <span>
+            <span id="resize">Resize</span>
             <div id="resize-p">
-                <input type="number" id="resize-x">x
-                <input type="number" id="resize-y">
+                <input type="number" id="resize-x" value="100">x
+                <input type="number" id="resize-y" value="30">:
+                <input type="number" id="resize-px" value="12">px
                 <button id='resize-ok'>OK</button>
             </div>
         </span>
     </header>
-    <div id='canvas-bucket' tabindex="0">
-        <canvas id="canvas"></canvas>
-    </div>
+    <canvas id="canvas" tabindex="0"></canvas>
     <script src="head.js"></script>
     <script src="proto.js"></script>
     <script src="util.js"></script>

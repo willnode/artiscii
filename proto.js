@@ -42,7 +42,7 @@ Rect.prototype.equals = function (obj) {
 }
 
 Rect.prototype.isContaining = function (point) {
-    return this.x >= point.x && point.x <= this.r && this.y >= point.y && point.y <= this.b;
+    return this.x <= point.x && point.x <= this.r && this.y <= point.y && point.y <= this.b;
 }
 
 Rect.prototype.trunc = function () {
@@ -65,6 +65,11 @@ function CanvasState(data, area, selection) {
             other.selection === this.selection;
     }
 }
+
+// Cookie
+var thisname = 'artiscii'
+
+// Keys
 
 var Key = Object.freeze({
     Backspace: 8,

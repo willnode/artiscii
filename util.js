@@ -200,14 +200,12 @@ var getMousePos = function (evt) {
 
 var flexible = function (r) {
     if (r.w < 0) {
-        r.x += r.w - 1;
+        r.x += r.w;
         r.w *= -1;
-        r.w++;
     }
     if (r.h < 0) {
-        r.y += r.h - 1;
+        r.y += r.h;
         r.h *= -1;
-        r.h++;
     }
     r.w++;
     r.h++;
@@ -471,9 +469,13 @@ var RecordUndo = function (state) {
 
     if (undostack.length > 0 && undostack[undostack.length - 1].equals(state))
         return;
+
     undostack.push(state);
     if (undostack.length > 20)
         undostack.shift();
+
+    // save to localstorage
+    localStorage.setItem(thisname, JSON.stringify(state));
 }
 
 var Undo = function () {

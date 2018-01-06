@@ -16,10 +16,10 @@ $('input[name=tool]').on('click', () => head(head()));
 var head = function (val) {
     if (val !== undefined) {
         $("#" + heads[val]).prop("checked", true);
-        curs('default');
+        showcursor('default');
         {
             var x = window.scrollX, y = window.scrollY;
-            _bucket.focus();
+            canvas.focus();
             window.scrollTo(x, y);
         }
         _headback = undefined;

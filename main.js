@@ -1,10 +1,6 @@
-var canvas = $('#canvas').get(0), _bucket = $('#canvas-bucket').get(0);
+var canvas = $('#canvas').get(0), ctx = canvas.getContext('2d');
 
 var height, width, font, _headback, _seldown, _drgdown, _drwshot, _dwned, _freeze;
-
-var ctx = canvas.getContext('2d');
-
-ctx.textBaseline = "top";
 
 var size = new Point(100, 30), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
 
@@ -13,7 +9,8 @@ var data = fill(''), undostack = [], palette = '\0';
 resizeFont(12);
 
 $('#resize-ok').on('click', () => {
-    resizeCell({ x: ~~$('#resize-x').val(), y: ~~$('#resize-y').val() })
+    resizeCell({ x: ~~$('#resize-x').val(), y: ~~$('#resize-y').val() });
+    resizeFont(~~$('#resize-px').val())
 })
 
 $(canvas).on('mousedown', (e) => {
@@ -34,7 +31,10 @@ $(canvas).on('mousedown', (e) => {
         _drgdown = selection.clone();
         showcursor("move");
     } else if (h === Tool.Freetype) {
-        curs(_seldown.clone());
+        if (_headback === Tool.Select && !selection.isContaining(_seldown)) {
+            head(Tool.Select);
+        } else
+            curs(_seldown.clone());
     } else {
         sels(new Rect(_seldown.x, _seldown.y, 1, 1));
         if (h === Tool.Brush)
@@ -114,10 +114,12 @@ $(document).on('mouseup', (e) => {
     }
 });
 
-$(_bucket).on('keydown', (e) => {
+$(canvas).on('keydown', (e) => {
     var h = head();
     if (e.keyCode == Key.Delete && h !== Tool.Freetype) {
         clearSelected();
+        e.preventDefault();
+        return;
     }
     if (e.ctrlKey) {
         switch (e.keyCode) {
@@ -140,9 +142,9 @@ $(_bucket).on('keydown', (e) => {
         return true;
     }
 
-    if (!e.altKey) {
+    {
         if (h === Tool.Select) {
-            head(Tool.Freetype);
+            head(h = Tool.Freetype);
             _headback = Tool.Select;
             curs(selection.location());
             showcursor('text');
@@ -158,12 +160,16 @@ $(_bucket).on('keydown', (e) => {
         else if (h == Tool.Freetype) {
             switch (e.keyCode) {
                 case Key.Enter:
-                    if (_headback === Tool.Select && cursor.y === selection.b - 1) {
-                        head(Tool.Select);
-                        showcursor('default');
-                        redraw();
-                    }
-                    else
+                    if (_headback === Tool.Select) {
+                        if (isCursorFree()) {
+                            gotoDown();
+                            selection = new Rect(selection.x, cursor.y, 1, 1);
+                            head(Tool.Select);
+                        } else if (cursor.y === selection.b - 1)
+                            head(Tool.Select);
+                        else
+                            gotoNextLine();
+                    } else
                         gotoNextLine();
                     break;
                 case Key.Backspace:
@@ -197,4 +203,22 @@ $(_bucket).on('keydown', (e) => {
             e.preventDefault();
         }
     }
+})
+
+//$(document).on('ready', () => {
+// load from cookie
+var state = localStorage.getItem(thisname);
+if (state) {
+    RecordUndo();
+    var x = JSON.parse(state);
+    // get with it data
+    ApplyState(new CanvasState(x.data,
+        new Rect(x.area.x, x.area.y, x.area.w, x.area.h),
+        new Rect(x.selection.x, x.selection.y, x.selection.w, x.selection.h)));
+}
+//});
+
+$(window).bind('beforeunload', () => {
+    // save to cookie
+    RecordUndo();
 })
