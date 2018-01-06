@@ -7,7 +7,7 @@ Point.prototype.clone = function () {
     return new Point(this.x, this.y);
 }
 
-Point.prototype.equals = function(obj) {
+Point.prototype.equals = function (obj) {
     return this.x === obj.x && this.y === obj.y
 }
 
@@ -32,15 +32,22 @@ Rect.prototype.size = function () {
     return new Point(this.w, this.h);
 }
 
-Rect.prototype.equals = function(obj) {
+Rect.prototype.equals = function (obj) {
     return this.x === obj.x && this.y === obj.y && this.w === obj.w && this.h === obj.h;
 }
+
+Rect.prototype.isContaining = function(point) {
+    return this.x >= point.x && point.x <= this.r && this.y >= point.y && point.y <= this.b;
+}
+
+//Object.defineProperty(Rect.prototype, 'r', { get: function () { return this.x + this.w; } })
+//Object.defineProperty(Rect.prototype, 'b', { get: function () { return this.y + this.h; } })
 
 function CanvasState(data, area, selection) {
     this.data = data;
     this.area = area;
     this.selection = selection;
-    this.equals = function (obj) {
+    this.equals = function (other) {
         return other.data === this.data &&
             other.area === this.area &&
             other.selection === this.selection;
@@ -147,4 +154,4 @@ var Key = Object.freeze({
     Back_Slash: 220,
     Close_Bracket: 221,
     Single_Quote: 222
-  });
+});

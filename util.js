@@ -58,14 +58,14 @@ var fill = function (str, col, row) {
         if (c === '\r') continue; // imagine this don't exist
         else if (c === '\n') {
             while ((s.length % col) !== 0) {
-                s += 'A';
+                s += ' ';
             }
         }
         else
-            s += (c.charCodeAt(0) <= 0x20 ? 'A' : c);
+            s += (c.charCodeAt(0) <= 0x20 ? ' ' : c);
     }
     while (s.length < cap)
-        s += 'A';
+        s += ' ';
     return s;
 }
 
@@ -125,16 +125,14 @@ var charsat = function (r, c) {
         for (var y = r.y; y < r.b; y++)
             s += data.substr(y * size.x + r.x, r.w);
         return s;
-
     } else {
         if (c.length != r.w * r.h)
             throw "unmatching buffer count!";
 
         for (var y = r.y; y < r.b; y++)
             data = data.substring(0, y * size.x + r.x) +
-                c.substr(y * size.x + r.x, r.w) +
+                c.substr((y - r.y) * r.w, r.w) +
                 data.substring(y * size.x + r.r);
-
         redraw();
     }
 }
@@ -208,20 +206,16 @@ var paste = function (text, trim) {
     text = text.replace("\r", "");
     if (!text) { clearSelected(); return; }
 
-    if (isCursorFree())
-    {
+    if (isCursorFree()) {
         var sel = selection;
         var w = 0, h = 0;
-        for (var i = 0; i < text.length; i++)
-        {
-            if (text[i] == '\n')
-            {
+        for (var i = 0; i < text.length; i++) {
+            if (text[i] == '\n') {
                 sel.w = Math.max(sel.w, w);
                 h++;
                 w = 0;
             }
-            else
-            {
+            else {
                 w++;
             }
 
@@ -233,13 +227,11 @@ var paste = function (text, trim) {
     _freeze = true;
     var intrimming = trim;
     cursor = selection.location();
-    for (var i = 0; i < text.length; i++)
-    {
+    for (var i = 0; i < text.length; i++) {
         if (intrimming && text.charCodeAt(i) <= 0x20)
             continue;
         intrimming = false;
-        if (append(text.charAt(i)))
-        {
+        if (append(text.charAt(i))) {
             if (text[i] != '\n')
                 while (i < text.length && text.charCodeAt(i) !== '\n')
                     i++;
@@ -250,22 +242,6 @@ var paste = function (text, trim) {
     }
     _freeze = false;
     redraw();
-
-}
-
-var copy = function () {
-    var s = '';
-
-    for (var y = selection.y; y < selection.b; y++)
-    {
-        for (var x = selection.x; x < selection.r; x++)
-        {
-            s += charat(new Point(x, y));
-        }
-        if (y < selection.b - 1)
-            s += '\n'
-    }
-    return s.replace('\0', ' ');
 
 }
 
@@ -376,20 +352,19 @@ var clearSelected = function () {
 var MoveSelected = function (dest) {
     if (selection.location().equals(dest)) return;
 
-    var txt = copy();
+    var txt = charsat(selection);
     _freeze = true;
     clearSelected();
     sels(dest);
     _freeze = false;
-    paste(txt, false);
+    charsat(selection, txt);
 }
 
 var Backspace = function (drag) {
     if (drag) {
         var c = charsat(selection);
         var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
-        Array.copy(c, 0, c, 1, cr - 1);
-        c[0] = ' ';
+        c = ' ' + c.substr(0, cr - 1);
         charsat(selection, c);
     }
     else {
@@ -402,11 +377,9 @@ var Delete = function (drag) {
     if (drag) {
         var c = charsat(selection);
         var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
-        Array.copy(c, cr + 1, c, cr, c.length - cr - 1);
-        c[c.length - 1] = ' ';
+        c = c.substr(0, cr) + c.substr(cr + 1, c.length - cr - 1) + ' ';
         charsat(selection, c);
-    }
-    else {
+    } else {
         charat(cursor, ' ');
         gotoRight();
     }
@@ -480,12 +453,11 @@ var Insert = function (leftside) {
 
 var isCursorFree = () => selection.w <= 1 && selection.h <= 1;
 
-var RecordUndo = function () {
-    RecordUndo(makeState(true));
-}
-
 var RecordUndo = function (state) {
-    if (undostack.length > 0 && undostack.Last.Equals(state))
+    if (state === undefined)
+        state = makeState(true);
+
+    if (undostack.length > 0 && undostack[undostack.length - 1].equals(state))
         return;
     undostack.push(state);
     if (undostack.length > 20)
@@ -502,26 +474,23 @@ var Undo = function () {
         }
     }
     //else
-      //  SystemSounds.Beep.Play();
+    //  SystemSounds.Beep.Play();
 }
 
 function makeState(area) {
     if (area === true)
-        area = new Rectangle(0, 0, width, height);
+        area = new Rect(0, 0, width, height);
     else if (area === false)
         area = selection;
 
-    var sel = selection;
-    selection = area;
-    var r = new CanvasState(copy(), area, sel);
-    selection = sel;
-    return r;
+    return new CanvasState(charsat(area), area, selection);
 }
 
 function ApplyState(state) {
-    selection = state.area;
-    paste(state.data, false);
-    selection = state.selection;
+    _freeze = true;
+    charsat(state.area, state.data);
+    _freeze = false;
+    sels(state.selection);
 }
 
 var drawLine = function (A, B) {

@@ -8,9 +8,9 @@ ctx.textBaseline = "top";
 
 var size = new Point(100, 30), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
 
-var data = fill(''), undostack = [], palette = '';
+var data = fill(''), undostack = [], palette = ' ';
 
-resizeFont(11);
+resizeFont(12);
 
 $('#resize-ok').on('click', () => {
     resizeCell({ x: ~~$('#resize-x').val(), y: ~~$('#resize-y').val() })
@@ -35,8 +35,11 @@ $(canvas).on('mousedown', (e) => {
         showcursor("move");
     } else if (h === Tool.Freetype) {
         curs(new Point(_seldown.x / width, _seldown.y / height));
-    } else
+    } else {
         sels(new Rect(_seldown.x / width, _seldown.y / height, 1, 1));
+        if (h === Tool.Brush)
+            charat(selection.location(), palette === '\0' ? ' ' : palette);
+    }
 
     _dwned = true;
 })
@@ -60,7 +63,7 @@ $(document).on('mousemove', (e) => {
             break;
         case Tool.Brush:
             sels(new Rect(ms.x / width, ms.y / height, 1, 1));
-            charat(selection.location(), palette == '\0' ? ' ' : palette);
+            charat(selection.location(), palette === '\0' ? ' ' : palette);
             break;
         case Tool.Line:
         case Tool.Rectangle:
@@ -100,8 +103,7 @@ $(document).on('mouseup', (e) => {
     var ms = getMousePos(e);
 
     if (head() === Tool.Dragdrop) {
-        sels(new Point((ms.x - _seldown.x + _drgdown.x * width) / width,
-            (ms.y - _seldown.y + _drgdown.y * height) / height));
+        sels(_drgdown);
         MoveSelected(new Point((ms.x - _seldown.x + _drgdown.x * width) / width, (ms.y - _seldown.y + _drgdown.y * height) / height));
         if (_headback == Tool.Select) {
             head(Tool.Select);
@@ -115,9 +117,9 @@ $('#canvas-bucket').on('keydown', (e) => {
         ClearSelected();
     }
     if (e.ctrlKey) {
-        switch (e.KeyCode) {
+        switch (e.keyCode) {
             case Key.A:
-                sels(new Rectangle(0, 0, size.x, size.y));
+                sels(new Rect(0, 0, size.x, size.y));
                 break;
             case Key.V:
                 Paste(Clipboard.GetText(TextDataFormat.UnicodeText), e.Shift);
@@ -132,26 +134,25 @@ $('#canvas-bucket').on('keydown', (e) => {
                 return;
         }
         e.preventDefault();
-        return false;
+        return true;
     }
 
     if (!e.altKey) {
         if (head() === Tool.Select) {
-            //if (e..key.length >= 1)
-            {
-                head(Tool.Freetype);
-                _headback = Tool.Select;
-                showcursor('text');
-                RecordUndo();
-            }
+            head(Tool.Freetype);
+            _headback = Tool.Select;
+            curs(selection.location());
+            showcursor('text');
+            RecordUndo();
         }
 
         if (head() == Tool.Freetype) {
             switch (e.keyCode) {
                 case Key.Enter:
                     if (_headback == Tool.Select && !e.shiftKey) {
-                       head(Tool.Select);
-                       showcursor('default');
+                        head(Tool.Select);
+                        showcursor('default');
+                        redraw();
                     }
                     else
                         gotoNextLine();
@@ -178,7 +179,10 @@ $('#canvas-bucket').on('keydown', (e) => {
                     gotoLeft();
                     break;
                 default:
-                    append(e.key);
+                    if (e.key.length === 1)
+                        append(e.key);
+                    else
+                        return;
                     break;
             }
             e.preventDefault();
