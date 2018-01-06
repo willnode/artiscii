@@ -12,8 +12,10 @@ for (var i = 0; i < heads.length; i++) {
 }
 
 var head = function (val) {
-    if (val !== undefined)
+    if (val !== undefined) {
         $("#" + heads[val]).prop("checked", true);
+        curs('default');
+    }
     else
         return heads.indexOf($("input[name='tool']:checked").get(0).id);
 }

@@ -5,11 +5,15 @@ function IsBlank(c) {
     return c <= 0x20;
 }
 
-function getLineChar() {
-    return '+';
-}
+function getLineChar(start, end) {
+    if ((start === undefined && end === undefined) || start === end) {
+        return '+';
+    } else if (end !== undefined)
+        start = getLineChar((Math.atan2(end.y - start.y, end.x - start.x)
+        * 180.0 / Math.PI + 360.0) % 360.0);
 
-function getLineChar(deg) {
+    // interpret as degree
+    var deg = start;
     if (deg < 22.5)
         return '-';
     else if (deg < 67.5)
@@ -28,14 +32,6 @@ function getLineChar(deg) {
         return '/';
     else
         return '-';
-}
-
-function getLineChar(start, end) {
-    if (start == end)
-        return getLineChar();
-
-    return getLineChar((Math.Atan2(end.Y - start.Y, end.X - start.X)
-        * 180.0 / Math.PI + 360.0) % 360.0);
 }
 
 /// Ramanujan's ellipse perimeter approx from ellipse radius
@@ -76,6 +72,18 @@ var showcursor = function (cur) {
         return canvas.style.cursor;
 }
 
+var _pltte = $('#palette');
+
+var pals = function (str) {
+    if (str !== undefined) {
+        palette = (str.length === 1) ? str.charAt(0) : '\0';
+        _pltte.text(palette === '\0' ? "''" : "'" + palette + "'")
+        redraw();
+    }
+    else
+        return palette;
+}
+
 var text = function (str) {
     if (str !== undefined) {
         data = fill(str);
@@ -95,12 +103,14 @@ var curs = function (point) {
 }
 
 var sels = function (rect) {
+
     if (rect !== undefined) {
+        rect.trunc();
         if (rect.w !== undefined && rect.h !== undefined) {
-            selection = new Rect(Math.trunc(rect.x), Math.trunc(rect.y), Math.trunc(rect.w), Math.trunc(rect.h));
+            selection = rect;
         } else
             // just location
-            selection = new Rect(Math.trunc(rect.x), Math.trunc(rect.y), selection.w, selection.h);
+            selection = new Rect((rect.x), (rect.y), selection.w, selection.h);
         redraw();
     }
     else
@@ -108,7 +118,8 @@ var sels = function (rect) {
 }
 
 var charat = function (pos, val) {
-    var seek = pos.y * size.x + pos.x;
+    pos.trunc();
+    var seek = (pos.y * size.x) + pos.x;
     if (seek > data.length)
         return '\0'
     else if (val !== undefined) {
@@ -120,6 +131,7 @@ var charat = function (pos, val) {
 
 
 var charsat = function (r, c) {
+    r.trunc();
     if (c === undefined) {
         var s = '';
         for (var y = r.y; y < r.b; y++)
@@ -515,7 +527,7 @@ var drawLine = function (A, B) {
 }
 
 var drawRectangle = function (A, B) {
-    if (A == B) {
+    if (A.equals(B)) {
         charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
@@ -524,6 +536,7 @@ var drawRectangle = function (A, B) {
     drawLine(new Point(A.x, B.y), new Point(B.x, B.y));
     drawLine(new Point(A.x, A.y), new Point(A.x, B.y));
     drawLine(new Point(B.x, A.y), new Point(B.x, B.y));
+
     var c = palette == '\0' ? getLineChar() : palette;
 
     charat(A, c);
@@ -533,7 +546,7 @@ var drawRectangle = function (A, B) {
 }
 
 var drawEllipse = function (A, B) {
-    if (A == B) {
+    if (A.equals(B)) {
         charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
@@ -574,16 +587,16 @@ var drawEllipse = function (A, B) {
     var incY = () => { y--; dyt += d2yt; t += dyt; };
 
     while (y >= 0 && x <= a) {
-        var character = palette == '\0' ? getLineChar() : palette;
-        charat(xc + x, yc + y, character);
+        var character = palette === '\0' ? getLineChar() : palette;
+        charat(new Point(xc + x, yc + y), character);
 
         if (x != 0 || y != 0) {
-            charat(xc - x, yc - y, character);
+            charat(new Point(xc - x, yc - y), character);
         }
 
         if (x != 0 && y != 0) {
-            charat(xc + x, yc - y, character);
-            charat(xc - x, yc + y, character);
+            charat(new Point(xc + x, yc - y), character);
+            charat(new Point(xc - x, yc + y), character);
         }
 
         if (t + b2 * x <= crit1 || t + a2 * y <= crit3) {
@@ -601,7 +614,7 @@ var drawEllipse = function (A, B) {
 
     var D = new Point(A.x - B.x, A.y - B.y);
     var C = new Point((A.x + B.x) / 2, (A.y + B.y) / 2);
-    var L = Utility.ellipsePerimeter(D.x, D.y);
+    var L = ellipsePerimeter(D.x, D.y);
     var m, n;
     for (var i = 0; i <= L;) {
         m = new Point(C.x + Math.trunc(Math.cos(i / L * 2 * Math.PI) * D.x / 2), C.y + Math.trunc(Math.sin(i / L * 2 * Math.PI) * D.y / 2));

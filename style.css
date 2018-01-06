@@ -57,6 +57,9 @@ textarea:::-moz-selection {
     width: 100px;
 }
 
+#palette {
+    border: 1px solid gray;
+}
 #canvas-bucket {
     width: 100%;
     height: 100%;

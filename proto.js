@@ -11,6 +11,11 @@ Point.prototype.equals = function (obj) {
     return this.x === obj.x && this.y === obj.y
 }
 
+Point.prototype.trunc = function () {
+    this.x = Math.trunc(this.x);
+    this.y = Math.trunc(this.y);
+}
+
 var Rect = function (x, y, w, h) {
     this.x = x;
     this.y = y;
@@ -36,12 +41,19 @@ Rect.prototype.equals = function (obj) {
     return this.x === obj.x && this.y === obj.y && this.w === obj.w && this.h === obj.h;
 }
 
-Rect.prototype.isContaining = function(point) {
+Rect.prototype.isContaining = function (point) {
     return this.x >= point.x && point.x <= this.r && this.y >= point.y && point.y <= this.b;
 }
 
-//Object.defineProperty(Rect.prototype, 'r', { get: function () { return this.x + this.w; } })
-//Object.defineProperty(Rect.prototype, 'b', { get: function () { return this.y + this.h; } })
+Rect.prototype.trunc = function () {
+    this.x = Math.trunc(this.x);
+    this.y = Math.trunc(this.y);
+    this.w = Math.trunc(this.w);
+    this.h = Math.trunc(this.h);
+    this.r = this.x + this.w;
+    this.b = this.y + this.h;
+}
+
 
 function CanvasState(data, area, selection) {
     this.data = data;

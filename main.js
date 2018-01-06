@@ -8,7 +8,7 @@ ctx.textBaseline = "top";
 
 var size = new Point(100, 30), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
 
-var data = fill(''), undostack = [], palette = ' ';
+var data = fill(''), undostack = [], palette = '\0';
 
 resizeFont(12);
 
@@ -24,7 +24,7 @@ $(canvas).on('mousedown', (e) => {
 
     var h = head();
 
-    _seldown = new Rect(Math.floor(ms.x / width) * width, Math.floor(ms.y / height) * height);
+    _seldown = new Point(Math.floor(ms.x / width), Math.floor(ms.y / height));
 
     if (h === Tool.Line || h === Tool.Rectangle || h === Tool.Circle)
         _drwshot = data;
@@ -34,9 +34,9 @@ $(canvas).on('mousedown', (e) => {
         _drgdown = selection.clone();
         showcursor("move");
     } else if (h === Tool.Freetype) {
-        curs(new Point(_seldown.x / width, _seldown.y / height));
+        curs(_seldown.clone());
     } else {
-        sels(new Rect(_seldown.x / width, _seldown.y / height, 1, 1));
+        sels(new Rect(_seldown.x, _seldown.y, 1, 1));
         if (h === Tool.Brush)
             charat(selection.location(), palette === '\0' ? ' ' : palette);
     }
@@ -49,39 +49,38 @@ $(document).on('mousemove', (e) => {
     if (!_dwned) return;
 
     var ms = getMousePos(e);
+    ms.x = Math.trunc(ms.x / width);
+    ms.y = Math.trunc(ms.y / height);
 
     switch (head()) {
         case Tool.Select:
-            sels(flexible(new Rect(_seldown.x / width, _seldown.y / height,
-                (ms.x - _seldown.x) / width, (ms.y - _seldown.y) / height)));
+            sels(flexible(new Rect(_seldown.x, _seldown.y, ms.x - _seldown.x, ms.y - _seldown.y)));
             break;
         case Tool.Freetype:
             break;
         case Tool.Dragdrop:
-            sels(new Point((ms.x - _seldown.x + _drgdown.x * width) / width,
-                (ms.y - _seldown.y + _drgdown.y * height) / height))
+            sels(new Point(ms.x - _seldown.x + _drgdown.x, ms.y - _seldown.y + _drgdown.y))
             break;
         case Tool.Brush:
-            sels(new Rect(ms.x / width, ms.y / height, 1, 1));
+            sels(new Rect(ms.x, ms.y, 1, 1));
             charat(selection.location(), palette === '\0' ? ' ' : palette);
             break;
         case Tool.Line:
         case Tool.Rectangle:
         case Tool.Circle:
-            sels(flexible(new Rect(_seldown.x, _seldown.y,
-                (ms.x / width - _seldown.x), (ms.y / height - _seldown.y))));
+            sels(flexible(new Rect(_seldown.x, _seldown.y, ms.x - _seldown.x, ms.y - _seldown.y)));
 
             _freeze = true;
             data = _drwshot;
             switch (head()) {
                 case Tool.Line:
-                    drawLine(new Point(ms.x / width, ms.y / height), _seldown);
+                    drawLine(ms, _seldown);
                     break;
                 case Tool.Rectangle:
-                    drawRectangle(new Point(ms.x / width, ms.y / height), _seldown);
+                    drawRectangle(ms, _seldown);
                     break;
                 case Tool.Circle:
-                    drawEllipse(new Point(ms.x / width, ms.y / height), _seldown);
+                    drawEllipse(ms, _seldown);
                     break;
                 default:
                     break;
@@ -100,11 +99,14 @@ $(document).on('mouseup', (e) => {
 
     _dwned = false;
 
-    var ms = getMousePos(e);
-
     if (head() === Tool.Dragdrop) {
+
+        var ms = getMousePos(e);
+        ms.x = Math.trunc(ms.x / width);
+        ms.y = Math.trunc(ms.y / height);
+
         sels(_drgdown);
-        MoveSelected(new Point((ms.x - _seldown.x + _drgdown.x * width) / width, (ms.y - _seldown.y + _drgdown.y * height) / height));
+        MoveSelected(new Point(ms.x - _seldown.x + _drgdown.x, ms.y - _seldown.y + _drgdown.y));
         if (_headback == Tool.Select) {
             head(Tool.Select);
             showcursor('default');
@@ -113,8 +115,9 @@ $(document).on('mouseup', (e) => {
 });
 
 $('#canvas-bucket').on('keydown', (e) => {
-    if (e.keyCode == Key.Delete && head() !== Tool.Freetype) {
-        ClearSelected();
+    var h = head();
+    if (e.keyCode == Key.Delete && h !== Tool.Freetype) {
+        clearSelected();
     }
     if (e.ctrlKey) {
         switch (e.keyCode) {
@@ -138,7 +141,7 @@ $('#canvas-bucket').on('keydown', (e) => {
     }
 
     if (!e.altKey) {
-        if (head() === Tool.Select) {
+        if (h === Tool.Select) {
             head(Tool.Freetype);
             _headback = Tool.Select;
             curs(selection.location());
@@ -146,7 +149,13 @@ $('#canvas-bucket').on('keydown', (e) => {
             RecordUndo();
         }
 
-        if (head() == Tool.Freetype) {
+        if (h >= Tool.Line) {
+            if (e.key.length >= 1) {
+                pals(e.key);
+                e.preventDefault();
+            }
+        }
+        else if (h == Tool.Freetype) {
             switch (e.keyCode) {
                 case Key.Enter:
                     if (_headback == Tool.Select && !e.shiftKey) {
