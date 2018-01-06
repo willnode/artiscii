@@ -1,0 +1,31 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "watch bundle.js",
+            "type": "shell",
+            "command": "yarn run build",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "production bundle.js",
+            "type": "shell",
+            "command": "yarn run production",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "run http server",
+            "type": "shell",
+            "command": "yarn run run",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}
