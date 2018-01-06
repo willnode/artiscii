@@ -1,34 +1,51 @@
 // functions only. No execution permitted
 
-var Point = function(x, y) {
+var Point = function (x, y) {
     this.x = x;
     this.y = y;
 }
 
-var Rect = function(x, y, w, h) {
+Point.prototype.clone = function () {
+    return new Point(this.x, this.y);
+}
+
+var Rect = function (x, y, w, h) {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
+    this.r = x + w;
+    this.b = y + h;
 }
 
-var fill = function (str) {
+Rect.prototype.clone = function () {
+    return new Rect(this.x, this.y, this.w, this.h);
+}
+
+Rect.prototype.location = function () {
+    return new Point(this.x, this.y);
+}
+
+Rect.prototype.size = function () {
+    return new Point(this.w, this.h);
+}
+
+var fill = function (str, col, row) {
+    if (col === undefined)
+        col = size.x;
+    if (row === undefined)
+        row = size.y;
+
     var s = '';
     var t = /\s/
-    var row = (size.x + 1);
-    var cap = row * size.y;
+    var cap = col * row;
     for (var i = 0; i < str.length; i++) {
         if (s.length >= cap)
             break;
         var c = str.charAt(i);
-        if (c === '\r') continue; // unnacceptable
-        if ((s.length % row) === 0) {
-            s += '\n';
-            if (!t.test(c))
-                s += c;
-        }
+        if (c === '\r') continue; // imagine this don't exist
         else if (c === '\n') {
-            while ((s.length % row) !== 0) {
+            while ((s.length % col) !== 0) {
                 s += 'A';
             }
         }
@@ -36,8 +53,8 @@ var fill = function (str) {
             s += (t.test(c) ? 'A' : c);
     }
     while (s.length < cap)
-        s += (s.length % row) == 0 ? '\n' : 'A';
-    return s.substring(1);
+        s += 'A';
+    return s;
 }
 
 var showcursor = function (cur) {
@@ -54,6 +71,15 @@ var text = function (str) {
     }
     else
         return data;
+}
+
+var curs = function (point) {
+    if (point !== undefined) {
+        cursor = point;
+        redraw();
+    }
+    else
+        return cursor;
 }
 
 var sels = function (rect) {
@@ -108,10 +134,10 @@ var resizeFont = function (px) {
 
 var getMousePos = function (evt) {
     var rect = canvas.getBoundingClientRect();
-    return {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
-    };
+    return new Point(
+        evt.clientX - rect.left,
+        evt.clientY - rect.top
+    );
 }
 
 var flexible = function (r) {
@@ -145,95 +171,95 @@ var append = function (c) {
         return true;
     }
     var cur = cursor;
-    CharacterAt(cur, c);
+    charat(cur, c);
     return gotoRight();
 }
 
 var gotoUp = function () {
-    var cur =  cursor;
-    if (IsCursorFree) {
-        if (cur.Y == 0)
-            cur.Y = ImageSize.Height;
+    var cur = cursor;
+    if (isCursorFree()) {
+        if (cur.y == 0)
+            cur.y = size.y;
     }
     else {
-        if (cur.Y == Selection.Top)
-            cur.Y = Selection.Bottom;
+        if (cur.y == selection.y)
+            cur.y = selection.b;
     }
-    cur.Y--;
-    cursor = cur;
+    cur.y--;
+
 }
 
 var gotoDown = function () {
     var cur = cursor;
-    cur.Y++;
-    if (IsCursorFree) {
-        if (cur.Y == ImageSize.Height)
-            cur.Y = 0;
+    cur.y++;
+    if (isCursorFree()) {
+        if (cur.y == size.y)
+            cur.y = 0;
     }
     else {
-        if (cur.Y == Selection.Bottom)
-            cur.Y = Selection.Top;
+        if (cur.y == selection.b)
+            cur.y = selection.y;
     }
     cursor = cur;
 }
 
 var gotoRight = function () {
     var cur = cursor;
-    cur.X++;
-    if (IsCursorFree) {
-        if (cur.X == ImageSize.Width) {
-            cur.X = 0;
-            cur.Y++;
-            if (cur.Y == ImageSize.Height)
-                cur.Y = 0;
+    cur.x++;
+    if (isCursorFree()) {
+        if (cur.x == size.x) {
+            cur.x = 0;
+            cur.y++;
+            if (cur.y == size.y)
+                cur.y = 0;
         }
     }
     else {
-        if (cur.X == Selection.Right) {
-            cur.X = Selection.Left;
-            cur.Y++;
-            if (cur.Y == Selection.Bottom)
-                cur.Y = Selection.Top;
+        if (cur.x == selection.r) {
+            cur.x = selection.x;
+            cur.y++;
+            if (cur.y == selection.b)
+                cur.y = selection.y;
         }
     }
-    var r = cur.Y != cursor.Y;
+    var r = cur.y != cursor.y;
     cursor = cur;
     return r;
 }
 
 var gotoLeft = function () {
     var cur = cursor;
-    if (IsCursorFree) {
-        if (cur.X == 0) {
-            if (cur.Y == 0)
-                cur.Y = ImageSize.Height;
-            cur.Y--;
-            cur.X = ImageSize.Width;
+    if (isCursorFree()) {
+        if (cur.x == 0) {
+            if (cur.y == 0)
+                cur.y = size.y;
+            cur.y--;
+            cur.x = size.x;
         }
     }
     else {
-        if (cur.X == Selection.Left) {
-            if (cur.Y == Selection.Top)
-                cur.Y = Selection.Bottom;
-            cur.Y--;
-            cur.X = Selection.Right;
+        if (cur.x == selection.x) {
+            if (cur.y == selection.y)
+                cur.y = selection.b;
+            cur.y--;
+            cur.x = selection.r;
         }
     }
-    cur.X--;
-    var r = cur.Y != cursor.Y;
+    cur.x--;
+    var r = cur.y !== cursor.y;
     cursor = cur;
     return r;
 }
 
 var gotoNextLine = function () {
     var cur = cursor;
-    if (IsCursorFree) {
-        cur.X = 0;
-        cur.Y = (cur.Y + 1) % ImageSize.Height;
+    if (isCursorFree()) {
+        cur.x = 0;
+        cur.y = (cur.y + 1) % size.y;
     }
     else {
-        cur.X = Selection.Left;
-        cur.Y = (cur.Y - Selection.Y + 1) % Selection.Height + Selection.Y;
+        cur.x = selection.x;
+        cur.y = (cur.y - selection.y + 1) % selection.h + selection.y;
     }
     cursor = cur;
     if (CausesValidation)
@@ -242,19 +268,17 @@ var gotoNextLine = function () {
 
 var ClearSelected = function () {
     CausesValidation = false;
-    for (int x = Selection.Left; x < Selection.Right; x++)
-    {
-        for (int y = Selection.Top; y < Selection.Bottom; y++)
-        {
-            CharacterAt(new Point(x, y), ' ');
+    for (var x = selection.x; x < selection.r; x++) {
+        for (var y = selection.y; y < selection.b; y++) {
+            charat(new Point(x, y), ' ');
         }
     }
     CausesValidation = true;
     Invalidate();
 }
 
-var MoveSelected = function (Point dest) {
-    if (Selection.Location == dest) return;
+var MoveSelected = function (dest) {
+    if (selection.location() == dest) return;
     CausesValidation = false;
     var txt = Copy();
     ClearSelected();
@@ -262,116 +286,116 @@ var MoveSelected = function (Point dest) {
     Paste(txt, false);
 }
 
-var Backspace = function (bool drag) {
+var Backspace = function (drag) {
     if (drag) {
-        var c = CharactersAt(Selection);
-        var cr = (cursor.X - Selection.X) + (cursor.Y - Selection.Y) * Selection.Width;
+        var c = charsat(selection);
+        var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
         Array.Copy(c, 0, c, 1, cr - 1);
         c[0] = ' ';
-        CharactersAt(Selection, c);
+        charsat(selection, c);
     }
     else {
         gotoLeft();
-        CharacterAt(cursor, ' ');
+        charat(cursor, ' ');
     }
 }
 
-var Delete = function (bool drag) {
+var Delete = function (drag) {
     if (drag) {
-        var c = CharactersAt(Selection);
-        var cr = (cursor.X - Selection.X) + (cursor.Y - Selection.Y) * Selection.Width;
-        Array.Copy(c, cr + 1, c, cr, c.Length - cr - 1);
-        c[c.Length - 1] = ' ';
-        CharactersAt(Selection, c);
+        var c = charsat(selection);
+        var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
+        Array.Copy(c, cr + 1, c, cr, c.length - cr - 1);
+        c[c.length - 1] = ' ';
+        charsat(selection, c);
     }
     else {
-        CharacterAt(cursor, ' ');
+        charat(cursor, ' ');
         gotoRight();
     }
 }
 
-var Insert = function (bool leftside) {
+var Insert = function (leftside) {
     if (leftside) {
-        var c = CharactersAt(Selection);
-        var cr = (cursor.X - Selection.X) + (cursor.Y - Selection.Y) * Selection.Width;
+        var c = charsat(selection);
+        var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
         Array.Copy(c, 1, c, 0, cr - 1);
-        c[c.Length - 1] = ' ';
-        CharactersAt(Selection, c);
+        c[c.length - 1] = ' ';
+        charsat(selection, c);
     }
     else {
-        var c = CharactersAt(Selection);
-        var cr = (cursor.X - Selection.X) + (cursor.Y - Selection.Y) * Selection.Width;
-        Array.Copy(c, cr, c, cr + 1, c.Length - cr - 1);
+        var c = charsat(selection);
+        var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
+        Array.Copy(c, cr, c, cr + 1, c.length - cr - 1);
         c[cr] = ' ';
-        CharactersAt(Selection, c);
+        charsat(selection, c);
     }
 }
 
-var Mirror = function (CanvasMirror op) {
-    var c = CharactersAt(Selection);
-    int w = Selection.Width, h = Selection.Height;
-    char[] dest = new char[c.Length];
+var Mirror = function (op) {
+    var c = charsat(selection);
+    var w = selection.w, h = selection.h;
+    var dest = '';
     switch (op) {
         case CanvasMirror.MirrorX:
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            dest[(w - x - 1) + y * w] = c[x + y * w];
+            for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                    dest[(w - x - 1) + y * w] = c[x + y * w];
             break;
 
         case CanvasMirror.MirrorY:
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            dest[x + (h - y - 1) * w] = c[x + y * w];
+            for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                    dest[x + (h - y - 1) * w] = c[x + y * w];
             break;
 
         case CanvasMirror.RotateCW:
-            Selection = new Rectangle(Selection.X, Selection.Y, h, w);
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            dest[x * h + (h - y - 1)] = c[x + y * w];
+            selection = new Rectangle(selection.x, selection.y, h, w);
+            for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                    dest[x * h + (h - y - 1)] = c[x + y * w];
             break;
 
         case CanvasMirror.RotateCCW:
-            Selection = new Rectangle(Selection.X, Selection.Y, h, w);
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            dest[(w - x - 1) * h + y] = c[x + y * w];
+            selection = new Rectangle(selection.x, selection.y, h, w);
+            for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                    dest[(w - x - 1) * h + y] = c[x + y * w];
             break;
 
         case CanvasMirror.TransposeXY:
-            Selection = new Rectangle(Selection.X, Selection.Y, h, w);
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            dest[y + x * w] = c[x + y * w];
+            selection = new Rectangle(selection.x, selection.y, h, w);
+            for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                    dest[y + x * w] = c[x + y * w];
             break;
 
         case CanvasMirror.TransposeYX:
-            Selection = new Rectangle(Selection.X, Selection.Y, h, w);
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            dest[(w - x - 1) * w + (h - y - 1)] = c[x + y * w];
+            selection = new Rectangle(selection.x, selection.y, h, w);
+            for (var y = 0; y < h; y++)
+                for (var x = 0; x < w; x++)
+                    dest[(w - x - 1) * w + (h - y - 1)] = c[x + y * w];
             break;
     }
 
-    CharactersAt(Selection, dest);
+    charsat(selection, dest);
 }
 
-var CharacterAt = function (Point point) {
+var charat = function (Point point) {
     try {
-        return characters[point.X + point.Y * ImageSize.Width];
+        return characters[point.X + point.Y * size.x];
     }
     catch (Exception) {
         return '\0';
     }
 }
 
-var CharacterAt = function (int x, int y, char c) {
-    CharacterAt(new Point(x, y), c);
+var charat = function (var x, var y, char c) {
+    charat(new Point(x, y), c);
 }
 
-var CharacterAt = function (Point point, char c) {
+var charat = function (Point point, char c) {
     try {
-        characters[point.X + point.Y * ImageSize.Width] = Utility.IsBlank(c) ? ' ' : c;
+        characters[point.X + point.Y * size.x] = Utility.IsBlank(c) ? ' ' : c;
 
         if (CausesValidation)
             Invalidate();
@@ -380,23 +404,22 @@ var CharacterAt = function (Point point, char c) {
     }
 }
 
-public char[] CharactersAt(Rectangle r)
-{
-    var c = new char[r.Height * r.Width];
-    for (int y = r.Top; y < r.Bottom; y++)
-    Array.Copy(characters, y * ImageSize.Width + r.X, c, (y - r.Y) * r.Width, r.Width);
-    return c;
-}
+var charsat = function (r, c) {
+    if (c === undefined) {
+        var c = new char[r.Height * r.Width];
+        for (var y = r.y; y < r.b; y++)
+            Array.Copy(characters, y * size.x + r.X, c, (y - r.Y) * r.Width, r.Width);
+        return c;
 
-var CharactersAt = function (Rectangle r, char[] c) {
-    if (c.Length != r.Width * r.Height)
-        throw new ArgumentException("unmatching buffer count!");
+    } else {
+        if (c.length != r.w * r.h)
+            throw "unmatching buffer count!";
 
-    for (int y = r.Top; y < r.Bottom; y++)
-    Array.Copy(c, (y - r.Y) * r.Width, characters, y * ImageSize.Width + r.X, r.Width);
+        for (var y = r.y; y < r.b; y++)
+            Array.Copy(c, (y - r.Y) * r.Width, characters, y * size.x + r.X, r.Width);
 
-    if (CausesValidation)
-        Invalidate();
+        redraw();
+    }
 }
 
 isCursorFree = () => selection.w <= 1 && selection.h <= 1;
@@ -415,10 +438,10 @@ var RecordUndo = function (CanvasState state) {
 
 var Undo = function () {
     if (undostack.Count > 0) {
-        var txt = Text; var sel = Selection;
+        var txt = Text; var sel = selection;
         ApplyState(undostack.Last.Value);
         undostack.RemoveLast();
-        if (undostack.Count > 0 && Text == txt && Selection == sel) {
+        if (undostack.Count > 0 && Text == txt && selection == sel) {
             // do it again
             Undo();
         }
@@ -429,12 +452,12 @@ var Undo = function () {
 
 CanvasState MakeState(bool whole)
 {
-    return MakeState(whole ? new Rectangle(Point.Empty, ImageSize) : Selection);
+    return MakeState(whole ? new Rectangle(Point.Empty, ImageSize) : selection);
 }
 
 CanvasState MakeState(Rectangle area)
 {
-    var sel = Selection;
+    var sel = selection;
     _selection = area;
     var r = new CanvasState()
     {
@@ -450,32 +473,31 @@ void ApplyState(CanvasState state)
 {
     _selection = state.area;
     Paste(state.data, false);
-    Selection = state.selection;
+    selection = state.selection;
 }
 
 var DrawLine = function (Point A, Point B) {
     if (A == B) {
-        CharacterAt(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
+        charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
         return;
     }
     Point m, n;
     var D = new Point(A.X - B.X, A.Y - B.Y);
-    var L = (int)Math.Sqrt(D.X * D.X + D.Y * D.Y) + 1;
-    for (int i = 0; i <= L;)
-    {
+    var L = (var) Math.Sqrt(D.X * D.X + D.Y * D.Y) + 1;
+    for (var i = 0; i <= L;) {
         m = new Point(A.X + ((B.X - A.X) * i) / L, A.Y + ((B.Y - A.Y) * i) / L);
         do {
             i++;
             n = new Point(A.X + ((B.X - A.X) * i) / L, A.Y + ((B.Y - A.Y) * i) / L);
         } while (m == n); // avoid duplicate write
 
-        CharacterAt(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
+        charat(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
     }
 }
 
 var DrawRectangle = function (Point A, Point B) {
     if (A == B) {
-        CharacterAt(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
+        charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
         return;
     }
 
@@ -485,19 +507,19 @@ var DrawRectangle = function (Point A, Point B) {
     DrawLine(new Point(B.X, A.Y), new Point(B.X, B.Y));
     var c = ToolArt == '\0' ? Utility.GetLineChar() : ToolArt;
 
-    CharacterAt(A, c);
-    CharacterAt(B, c);
-    CharacterAt(new Point(A.X, B.Y), c);
-    CharacterAt(new Point(B.X, A.Y), c);
+    charat(A, c);
+    charat(B, c);
+    charat(new Point(A.X, B.Y), c);
+    charat(new Point(B.X, A.Y), c);
 }
 
 var DrawEllipse = function (Point A, Point B) {
     if (A == B) {
-        CharacterAt(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
+        charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
         return;
     }
 
-    int a = (A.X - B.X) / 2, b = (A.Y - B.Y) / 2, xc = (B.X), yc = (B.Y);
+    var a = (A.X - B.X) / 2, b = (A.Y - B.Y) / 2, xc = (B.X), yc = (B.Y);
 
     if (a < 0) {
         xc += a * 2;
@@ -534,15 +556,15 @@ var DrawEllipse = function (Point A, Point B) {
 
     while (y >= 0 && x <= a) {
         var character = ToolArt == '\0' ? Utility.GetLineChar() : ToolArt;
-        CharacterAt(xc + x, yc + y, character);
+        charat(xc + x, yc + y, character);
 
         if (x != 0 || y != 0) {
-            CharacterAt(xc - x, yc - y, character);
+            charat(xc - x, yc - y, character);
         }
 
         if (x != 0 && y != 0) {
-            CharacterAt(xc + x, yc - y, character);
-            CharacterAt(xc - x, yc + y, character);
+            charat(xc + x, yc - y, character);
+            charat(xc - x, yc + y, character);
         }
 
         if (t + b2 * x <= crit1 || t + a2 * y <= crit3) {
@@ -562,16 +584,16 @@ var DrawEllipse = function (Point A, Point B) {
     //var C = new Point((A.X + B.X) / 2, (A.Y + B.Y) / 2);
     //var L = Utility.EllipsePerimeter(D.X, D.Y);
     //Point m, n;
-    //for (int i = 0; i <= L;)
+    //for (var i = 0; i <= L;)
     //{
-    //    m = new Point(C.X + (int)(Math.Cos(i / L * 2 * Math.PI) * D.X / 2), C.Y + (int)(Math.Sin(i / L * 2 * Math.PI) * D.Y / 2));
+    //    m = new Point(C.X + (var)(Math.Cos(i / L * 2 * Math.PI) * D.X / 2), C.Y + (var)(Math.Sin(i / L * 2 * Math.PI) * D.Y / 2));
     //    do
     //    {
     //        i++;
-    //        n = new Point(C.X + (int)(Math.Cos(i / L * 2 * Math.PI) * D.X / 2), C.Y + (int)(Math.Sin(i / L * 2 * Math.PI) * D.Y / 2));
+    //        n = new Point(C.X + (var)(Math.Cos(i / L * 2 * Math.PI) * D.X / 2), C.Y + (var)(Math.Sin(i / L * 2 * Math.PI) * D.Y / 2));
     //    } while (m == n && i <= L); // avoid duplicate write
 
-    //    CharacterAt(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
+    //    charat(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
     //}
 }
 
