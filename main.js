@@ -16,7 +16,7 @@ $('#resize-ok').on('click', () => {
     resizeCell({ x: ~~$('#resize-x').val(), y: ~~$('#resize-y').val() })
 })
 
-$('#canvas').on('mousedown', (e) => {
+$(canvas).on('mousedown', (e) => {
 
     if (e.which !== 1) return;
 
@@ -26,14 +26,13 @@ $('#canvas').on('mousedown', (e) => {
 
     _seldown = new Rect(Math.floor(ms.x / width) * width, Math.floor(ms.y / height) * height);
 
-    if (h === Tool.Dragdrop)
-        _drgdown = selection.clone();
-    else if (h === Tool.Line || h === Tool.Rectangle || h === Tool.Circle)
+    if (h === Tool.Line || h === Tool.Rectangle || h === Tool.Circle)
         _drwshot = data;
-    else if (e.ctrlKey) {
+    else if (h === Tool.Dragdrop || e.ctrlKey) {
         head(Tool.Dragdrop);
         _headback = Tool.Select;
-        showcursor("sizeall");
+        _drgdown = selection.clone();
+        showcursor("move");
     } else
         sels(new Rect(_seldown.x / width, _seldown.y / height, 1, 1));
 
@@ -108,3 +107,79 @@ $(document).on('mouseup', (e) => {
         }
     }
 });
+
+$('#canvas-bucket').on('keydown', (e) => {
+    if (e.keyCode == Key.Delete && head() !== Tool.Freetype) {
+        ClearSelected();
+    }
+    if (e.ctrlKey) {
+        switch (e.KeyCode) {
+            case Key.A:
+                sels(new Rectangle(0, 0, size.x, size.y));
+                break;
+            case Key.V:
+                Paste(Clipboard.GetText(TextDataFormat.UnicodeText), e.Shift);
+                break;
+            case Key.C:
+                Clipboard.SetText(Copy(), TextDataFormat.UnicodeText);
+                break;
+            case Key.Z:
+                Undo();
+                break;
+            default:
+                return;
+        }
+        e.preventDefault();
+        return false;
+    }
+
+    if (!e.altKey) {
+        if (head() === Tool.Select) {
+            if (e.key.Length >= 1) {
+                head(Tool.Freetype);
+                _headback = Tool.Select;
+                showcursor('text');
+                RecordUndo();
+            }
+        }
+
+        if (head() == Tool.Freetype) {
+            switch (e.KeyCode) {
+                case Key.Enter:
+                    if (ToolFallback == Tool.Select && e.Modifiers == Key.None) {
+                        Tool = Tool.Select;
+                        Cursor = Cursors.Default;
+                    }
+                    else
+                        GoToNextLine();
+                    break;
+                case Key.Back:
+                    Backspace(e.shiftKey);
+                    break;
+                case Key.Delete:
+                    Delete(!e.shiftKey);
+                    break;
+                case Key.Insert:
+                    Insert(e.shiftKey);
+                    break;
+                case Key.Up:
+                    GoToUp();
+                    break;
+                case Key.Down:
+                    GoToDown();
+                    break;
+                case Key.Right:
+                    GoToRight();
+                    break;
+                case Key.Left:
+                    GoToLeft();
+                    break;
+                default:
+                    if (s.Length >= 1)
+                        Append(e.key);
+                    break;
+            }
+            e.preventDefault();
+        }
+    }
+})

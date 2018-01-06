@@ -50,7 +50,6 @@ var fill = function (str, col, row) {
         row = size.y;
 
     var s = '';
-    var t = /\s/
     var cap = col * row;
     for (var i = 0; i < str.length; i++) {
         if (s.length >= cap)
@@ -63,7 +62,7 @@ var fill = function (str, col, row) {
             }
         }
         else
-            s += (t.test(c) ? 'A' : c);
+            s += (c.charCodeAt(0) <= 0x20 ? 'A' : c);
     }
     while (s.length < cap)
         s += 'A';
@@ -71,7 +70,7 @@ var fill = function (str, col, row) {
 }
 
 var showcursor = function (cur) {
-    if (str !== undefined)
+    if (cur !== undefined)
         canvas.style.cursor = cur;
     else
         return canvas.style.cursor;
@@ -113,9 +112,10 @@ var charat = function (pos, val) {
     if (seek > data.length)
         return '\0'
     else if (val !== undefined) {
-        text(data.substring(0, seek) + val + data.substring(seek + 1))
+        data = (data.substring(0, seek) + val.charAt(0) + data.substring(seek + 1));
+        redraw();
     } else
-        data.charAt(seek);
+        return data.charAt(seek);
 }
 
 
@@ -130,10 +130,10 @@ var charsat = function (r, c) {
         if (c.length != r.w * r.h)
             throw "unmatching buffer count!";
 
-        for (var y = r.y; y < r.b;)
+        for (var y = r.y; y < r.b;y++)
             data = data.substring(0, y * size.x + r.x) +
                 c.substr(y * size.x + r.x, r.w) +
-                data.substring(++y * size.x + r.x);
+                data.substring(y * size.x + r.r);
 
         redraw();
     }
@@ -143,16 +143,16 @@ var redraw = function () {
     if (_freeze) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textBaseline = "top";
     ctx.font = font;
     ctx.fillStyle = '#07c';
     ctx.fillRect(selection.x * width, selection.y * height,
         selection.w * width, selection.h * height);
 
-    var lines = data.split('\n');
     ctx.fillStyle = 'black';
 
-    for (var i = 0; i < lines.length; i++)
-        ctx.fillText(lines[i], 0, (i * height));
+    for (var i = 0; i < size.y; i++)
+        ctx.fillText(data.substr(i * size.x, size.x), 0, (i * height));
 }
 
 var resizeCanvas = function () {
@@ -163,6 +163,7 @@ var resizeCanvas = function () {
 
 var resizeCell = function (sz) {
     size = sz;
+    data = fill(data);
     resizeCanvas();
 }
 
@@ -464,19 +465,21 @@ function ApplyState(state) {
 }
 
 var drawLine = function (A, B) {
-    if (A == B) {
+    if (A.equals(B)) {
         charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
-    var m, n;
+    var m = new Point(0,0), n = new Point(0,0);
     var D = new Point(A.x - B.x, A.y - B.y);
     var L = Math.trunc(Math.sqrt(D.x * D.x + D.y * D.y)) + 1;
     for (var i = 0; i <= L;) {
-        m = new Point(A.x + ((B.x - A.x) * i) / L, A.y + ((B.y - A.y) * i) / L);
+        m.x = A.x + ((B.x - A.x) * i) / L;
+        m.y = A.y + ((B.y - A.y) * i) / L;
         do {
             i++;
-            n = new Point(A.x + ((B.x - A.x) * i) / L, A.y + ((B.y - A.y) * i) / L);
-        } while (m == n); // avoid duplicate write
+            n.x = A.x + ((B.x - A.x) * i) / L;
+            n.y = A.y + ((B.y - A.y) * i) / L;
+        } while (m.equals(n)); // avoid duplicate write
 
         charat(m, palette == '\0' ? getLineChar(m, n) : palette);
     }
