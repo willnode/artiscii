@@ -5,7 +5,7 @@ var Tool = Object.freeze({
 })
 
 for(var i = 0; i<heads.length;i++) {
-    document.write("<input type='radio' name='tool' id='", heads[i], "'>");
+    document.write("<input type='radio' name='tool' id='", heads[i], "' ", i == 0 ? 'checked' : '' , ">");
     document.write("<label for='", heads[i], "'>", heads[i], "</label>");
 }
 

@@ -1,6 +1,49 @@
 // functions only. No execution permitted
 
 
+function IsBlank(c) {
+    return c <= 0x20;
+}
+
+function getLineChar() {
+    return '+';
+}
+
+function getLineChar(deg) {
+    if (deg < 22.5)
+        return '-';
+    else if (deg < 67.5)
+        return '\\';
+    else if (deg < 112.5)
+        return '|';
+    else if (deg < 157.5)
+        return '/';
+    else if (deg < 202.5)
+        return '-';
+    else if (deg < 247.5)
+        return '\\';
+    else if (deg < 295.5)
+        return '|';
+    else if (deg < 337.5)
+        return '/';
+    else
+        return '-';
+}
+
+function getLineChar(start, end) {
+    if (start == end)
+        return getLineChar();
+
+    return getLineChar((Math.Atan2(end.Y - start.Y, end.X - start.X)
+        * 180.0 / Math.PI + 360.0) % 360.0);
+}
+
+/// Ramanujan's ellipse perimeter approx from ellipse radius
+function ellipsePerimeter(a, b)
+{
+    return Math.PI * (3 * (a + b) - Math.Sqrt((3 * a + b) * (a + 3 * b)));
+}
+
 var fill = function (str, col, row) {
     if (col === undefined)
         col = size.x;
@@ -38,7 +81,7 @@ var showcursor = function (cur) {
 var text = function (str) {
     if (str !== undefined) {
         data = fill(str);
-            redraw();
+        redraw();
     }
     else
         return data;
@@ -47,7 +90,7 @@ var text = function (str) {
 var curs = function (point) {
     if (point !== undefined) {
         cursor = point;
-            redraw();
+        redraw();
     }
     else
         return cursor;
@@ -55,7 +98,7 @@ var curs = function (point) {
 
 var sels = function (rect) {
     if (rect !== undefined) {
-        selection = rect;
+        selection = new Rect(Math.trunc(rect.x), Math.trunc(rect.y), Math.trunc(rect.w), Math.trunc(rect.h));
         redraw();
     }
     else
@@ -374,7 +417,7 @@ var Insert = function (leftside) {
 isCursorFree = () => selection.w <= 1 && selection.h <= 1;
 
 var RecordUndo = function () {
-    RecordUndo(MakeState(true));
+    RecordUndo(makeState(true));
 }
 
 var RecordUndo = function (state) {
@@ -399,15 +442,9 @@ var Undo = function () {
         SystemSounds.Beep.Play();
 }
 
-function MakeState(whole)
-{
-    return MakeState(whole ? new Rectangle(0,0, width, height) : selection);
-}
-
-function MakeState(area)
-{
+function makeState(area) {
     if (area === true)
-        area = new Rectangle(0,0, width, height);
+        area = new Rectangle(0, 0, width, height);
     else if (area === false)
         area = selection;
 
@@ -418,14 +455,13 @@ function MakeState(area)
     return r;
 }
 
-function ApplyState(state)
-{
+function ApplyState(state) {
     _selection = state.area;
     Paste(state.data, false);
     selection = state.selection;
 }
 
-var DrawLine = function ( A, B) {
+var drawLine = function (A, B) {
     if (A == B) {
         charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
         return;
@@ -444,16 +480,16 @@ var DrawLine = function ( A, B) {
     }
 }
 
-var DrawRectangle = function (A, B) {
+var drawRectangle = function (A, B) {
     if (A == B) {
         charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
         return;
     }
 
-    DrawLine(new Point(A.x, A.y), new Point(B.x, A.y));
-    DrawLine(new Point(A.x, B.y), new Point(B.x, B.y));
-    DrawLine(new Point(A.x, A.y), new Point(A.x, B.y));
-    DrawLine(new Point(B.x, A.y), new Point(B.x, B.y));
+    drawLine(new Point(A.x, A.y), new Point(B.x, A.y));
+    drawLine(new Point(A.x, B.y), new Point(B.x, B.y));
+    drawLine(new Point(A.x, A.y), new Point(A.x, B.y));
+    drawLine(new Point(B.x, A.y), new Point(B.x, B.y));
     var c = ToolArt == '\0' ? Utility.GetLineChar() : ToolArt;
 
     charat(A, c);
@@ -462,7 +498,7 @@ var DrawRectangle = function (A, B) {
     charat(new Point(B.x, A.y), c);
 }
 
-var DrawEllipse = function (A, B) {
+var drawEllipse = function (A, B) {
     if (A == B) {
         charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
         return;
@@ -531,18 +567,16 @@ var DrawEllipse = function (A, B) {
 
     var D = new Point(A.x - B.x, A.y - B.y);
     var C = new Point((A.x + B.x) / 2, (A.y + B.y) / 2);
-    var L = Utility.EllipsePerimeter(D.x, D.y);
+    var L = Utility.ellipsePerimeter(D.x, D.y);
     var m, n;
-    for (var i = 0; i <= L;)
-    {
-       m = new Point(C.x + Math.trunc (Math.cos(i / L * 2 * Math.PI) * D.x / 2), C.y + Math.trunc(Math.sin(i / L * 2 * Math.PI) * D.y / 2));
-       do
-       {
-           i++;
-           n = new Point(C.x + Math.trunc (Math.cos(i / L * 2 * Math.PI) * D.x / 2), C.y + Math.trunc(Math.sin(i / L * 2 * Math.PI) * D.y / 2));
-       } while (m == n && i <= L); // avoid duplicate write
+    for (var i = 0; i <= L;) {
+        m = new Point(C.x + Math.trunc(Math.cos(i / L * 2 * Math.PI) * D.x / 2), C.y + Math.trunc(Math.sin(i / L * 2 * Math.PI) * D.y / 2));
+        do {
+            i++;
+            n = new Point(C.x + Math.trunc(Math.cos(i / L * 2 * Math.PI) * D.x / 2), C.y + Math.trunc(Math.sin(i / L * 2 * Math.PI) * D.y / 2));
+        } while (m == n && i <= L); // avoid duplicate write
 
-       charat(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
+        charat(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
     }
 }
 
