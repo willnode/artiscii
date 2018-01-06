@@ -60,6 +60,9 @@ textarea:::-moz-selection {
     height: 100%;
     overflow: scroll;
 }
+#canvas-bucket:focus {
+    background-color: lightgoldenrodyellow;
+}
 canvas {
     border: 1px solid #07c
 }

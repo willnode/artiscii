@@ -130,7 +130,7 @@ var charsat = function (r, c) {
         if (c.length != r.w * r.h)
             throw "unmatching buffer count!";
 
-        for (var y = r.y; y < r.b;y++)
+        for (var y = r.y; y < r.b; y++)
             data = data.substring(0, y * size.x + r.x) +
                 c.substr(y * size.x + r.x, r.w) +
                 data.substring(y * size.x + r.r);
@@ -143,12 +143,17 @@ var redraw = function () {
     if (_freeze) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.textBaseline = "top";
-    ctx.font = font;
     ctx.fillStyle = '#07c';
     ctx.fillRect(selection.x * width, selection.y * height,
         selection.w * width, selection.h * height);
 
+    ctx.fillStyle = '#ef2';
+    if (head() == Tool.Freetype)
+        ctx.fillRect(cursor.x * width, cursor.y * height,
+            width, height);
+
+    ctx.textBaseline = "top";
+    ctx.font = font;
     ctx.fillStyle = 'black';
 
     for (var i = 0; i < size.y; i++)
@@ -200,11 +205,68 @@ var flexible = function (r) {
 }
 
 var paste = function (text, trim) {
-    console.log(text);
+    text = text.replace("\r", "");
+    if (!text) { clearSelected(); return; }
+
+    if (isCursorFree())
+    {
+        var sel = selection;
+        var w = 0, h = 0;
+        for (var i = 0; i < text.length; i++)
+        {
+            if (text[i] == '\n')
+            {
+                sel.w = Math.max(sel.w, w);
+                h++;
+                w = 0;
+            }
+            else
+            {
+                w++;
+            }
+
+        }
+        sel.h = Math.min(size.y - sel.y, h + 1);
+        selection = sel;
+    }
+
+    _freeze = true;
+    var intrimming = trim;
+    cursor = selection.location();
+    for (var i = 0; i < text.length; i++)
+    {
+        if (intrimming && text.charCodeAt(i) <= 0x20)
+            continue;
+        intrimming = false;
+        if (append(text.charAt(i)))
+        {
+            if (text[i] != '\n')
+                while (i < text.length && text.charCodeAt(i) !== '\n')
+                    i++;
+            else
+                intrimming = trim;
+
+        }
+    }
+    _freeze = false;
+    redraw();
+
 }
 
 var copy = function () {
-    return '*';
+    var s = '';
+
+    for (var y = selection.y; y < selection.b; y++)
+    {
+        for (var x = selection.x; x < selection.r; x++)
+        {
+            s += charat(new Point(x, y));
+        }
+        if (y < selection.b - 1)
+            s += '\n'
+    }
+    return s.replace('\0', ' ');
+
 }
 
 /// <returns>Return if the cursor just moves down</returns>
@@ -229,7 +291,7 @@ var gotoUp = function () {
             cur.y = selection.b;
     }
     cur.y--;
-
+    redraw();
 }
 
 var gotoDown = function () {
@@ -243,7 +305,7 @@ var gotoDown = function () {
         if (cur.y == selection.b)
             cur.y = selection.y;
     }
-    cursor = cur;
+    redraw();
 }
 
 var gotoRight = function () {
@@ -266,7 +328,7 @@ var gotoRight = function () {
         }
     }
     var r = cur.y != cursor.y;
-    cursor = cur;
+    redraw();
     return r;
 }
 
@@ -290,7 +352,7 @@ var gotoLeft = function () {
     }
     cur.x--;
     var r = cur.y !== cursor.y;
-    cursor = cur;
+    redraw();
     return r;
 }
 
@@ -304,7 +366,6 @@ var gotoNextLine = function () {
         cur.x = selection.x;
         cur.y = (cur.y - selection.y + 1) % selection.h + selection.y;
     }
-    cursor = cur;
     redraw();
 }
 
@@ -417,7 +478,7 @@ var Insert = function (leftside) {
 //     charsat(selection, dest);
 // }
 
-isCursorFree = () => selection.w <= 1 && selection.h <= 1;
+var isCursorFree = () => selection.w <= 1 && selection.h <= 1;
 
 var RecordUndo = function () {
     RecordUndo(makeState(true));
@@ -426,23 +487,22 @@ var RecordUndo = function () {
 var RecordUndo = function (state) {
     if (undostack.length > 0 && undostack.Last.Equals(state))
         return;
-    undostack.AddLast(state);
+    undostack.push(state);
     if (undostack.length > 20)
-        undostack.RemoveFirst();
+        undostack.shift();
 }
 
 var Undo = function () {
     if (undostack.length > 0) {
-        var txt = Text; var sel = selection;
-        ApplyState(undostack.Last.Value);
-        undostack.RemoveLast();
-        if (undostack.length > 0 && Text == txt && selection == sel) {
+        var txt = pop; var sel = selection;
+        ApplyState(undostack.pop());
+        if (undostack.length > 0 && data == txt && selection.equals(sel)) {
             // do it again
             Undo();
         }
     }
-    else
-        SystemSounds.Beep.Play();
+    //else
+      //  SystemSounds.Beep.Play();
 }
 
 function makeState(area) {
@@ -452,14 +512,14 @@ function makeState(area) {
         area = selection;
 
     var sel = selection;
-    _selection = area;
+    selection = area;
     var r = new CanvasState(copy(), area, sel);
-    _selection = sel;
+    selection = sel;
     return r;
 }
 
 function ApplyState(state) {
-    _selection = state.area;
+    selection = state.area;
     paste(state.data, false);
     selection = state.selection;
 }
@@ -469,7 +529,7 @@ var drawLine = function (A, B) {
         charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
-    var m = new Point(0,0), n = new Point(0,0);
+    var m = new Point(0, 0), n = new Point(0, 0);
     var D = new Point(A.x - B.x, A.y - B.y);
     var L = Math.trunc(Math.sqrt(D.x * D.x + D.y * D.y)) + 1;
     for (var i = 0; i <= L;) {

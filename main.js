@@ -33,6 +33,8 @@ $(canvas).on('mousedown', (e) => {
         _headback = Tool.Select;
         _drgdown = selection.clone();
         showcursor("move");
+    } else if (h === Tool.Freetype) {
+        curs(new Point(_seldown.x / width, _seldown.y / height));
     } else
         sels(new Rect(_seldown.x / width, _seldown.y / height, 1, 1));
 
@@ -135,7 +137,8 @@ $('#canvas-bucket').on('keydown', (e) => {
 
     if (!e.altKey) {
         if (head() === Tool.Select) {
-            if (e.key.Length >= 1) {
+            //if (e..key.length >= 1)
+            {
                 head(Tool.Freetype);
                 _headback = Tool.Select;
                 showcursor('text');
@@ -144,16 +147,16 @@ $('#canvas-bucket').on('keydown', (e) => {
         }
 
         if (head() == Tool.Freetype) {
-            switch (e.KeyCode) {
+            switch (e.keyCode) {
                 case Key.Enter:
-                    if (ToolFallback == Tool.Select && e.Modifiers == Key.None) {
-                        Tool = Tool.Select;
-                        Cursor = Cursors.Default;
+                    if (_headback == Tool.Select && !e.shiftKey) {
+                       head(Tool.Select);
+                       showcursor('default');
                     }
                     else
-                        GoToNextLine();
+                        gotoNextLine();
                     break;
-                case Key.Back:
+                case Key.Backspace:
                     Backspace(e.shiftKey);
                     break;
                 case Key.Delete:
@@ -163,20 +166,19 @@ $('#canvas-bucket').on('keydown', (e) => {
                     Insert(e.shiftKey);
                     break;
                 case Key.Up:
-                    GoToUp();
+                    gotoUp();
                     break;
                 case Key.Down:
-                    GoToDown();
+                    gotoDown();
                     break;
                 case Key.Right:
-                    GoToRight();
+                    gotoRight();
                     break;
                 case Key.Left:
-                    GoToLeft();
+                    gotoLeft();
                     break;
                 default:
-                    if (s.Length >= 1)
-                        Append(e.key);
+                    append(e.key);
                     break;
             }
             e.preventDefault();
