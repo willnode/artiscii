@@ -8,7 +8,7 @@ ctx.textBaseline = "top";
 
 var size = new Point(30, 20), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
 
-var data = fill('');
+var data = fill(''), undostack = [];
 
 resizeFont(11);
 
