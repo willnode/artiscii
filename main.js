@@ -1,4 +1,4 @@
-var canvas = $('#canvas').get(0);
+var canvas = $('#canvas').get(0), _bucket = $('#canvas-bucket').get(0);
 
 var height, width, font, _headback, _seldown, _drgdown, _drwshot, _dwned, _freeze;
 
@@ -114,7 +114,7 @@ $(document).on('mouseup', (e) => {
     }
 });
 
-$('#canvas-bucket').on('keydown', (e) => {
+$(_bucket).on('keydown', (e) => {
     var h = head();
     if (e.keyCode == Key.Delete && h !== Tool.Freetype) {
         clearSelected();
@@ -149,7 +149,7 @@ $('#canvas-bucket').on('keydown', (e) => {
             RecordUndo();
         }
 
-        if (h >= Tool.Line) {
+        if (h >= Tool.Brush) {
             if (e.key.length >= 1) {
                 pals(e.key);
                 e.preventDefault();
@@ -158,7 +158,7 @@ $('#canvas-bucket').on('keydown', (e) => {
         else if (h == Tool.Freetype) {
             switch (e.keyCode) {
                 case Key.Enter:
-                    if (_headback == Tool.Select && !e.shiftKey) {
+                    if (_headback === Tool.Select && cursor.y === selection.b - 1) {
                         head(Tool.Select);
                         showcursor('default');
                         redraw();

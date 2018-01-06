@@ -12,8 +12,8 @@ Point.prototype.equals = function (obj) {
 }
 
 Point.prototype.trunc = function () {
-    this.x = Math.trunc(this.x);
-    this.y = Math.trunc(this.y);
+    this.x = Math.trunc(this.x + 0.5);
+    this.y = Math.trunc(this.y + 0.5);
 }
 
 var Rect = function (x, y, w, h) {

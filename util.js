@@ -9,7 +9,7 @@ function getLineChar(start, end) {
     if ((start === undefined && end === undefined) || start === end) {
         return '+';
     } else if (end !== undefined)
-        start = getLineChar((Math.atan2(end.y - start.y, end.x - start.x)
+        start = ((Math.atan2(end.y - start.y, end.x - start.x)
         * 180.0 / Math.PI + 360.0) % 360.0);
 
     // interpret as degree
@@ -478,7 +478,7 @@ var RecordUndo = function (state) {
 
 var Undo = function () {
     if (undostack.length > 0) {
-        var txt = pop; var sel = selection;
+        var txt = data; var sel = selection;
         ApplyState(undostack.pop());
         if (undostack.length > 0 && data == txt && selection.equals(sel)) {
             // do it again
@@ -491,11 +491,11 @@ var Undo = function () {
 
 function makeState(area) {
     if (area === true)
-        area = new Rect(0, 0, width, height);
+        area = new Rect(0, 0, size.x, size.y);
     else if (area === false)
         area = selection;
 
-    return new CanvasState(charsat(area), area, selection);
+    return new CanvasState(charsat(area), area.clone(), selection.clone());
 }
 
 function ApplyState(state) {
