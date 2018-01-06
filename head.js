@@ -1,12 +1,14 @@
 var heads = ["Select", "Freetype", "Dragdrop", "Brush", "Line", "Arrow", "Rectangle", "Circle"]
 
 var Tool = Object.freeze({
-    "Select":0, "Freetype":1, "Dragdrop":2, "Brush":3, "Line":4, "Arrow":5, "Rectangle":6, "Circle":7
+    "Select": 0, "Freetype": 1, "Dragdrop": 2, "Brush": 3, "Line": 4, "Arrow": 5, "Rectangle": 6, "Circle": 7
 })
 
-for(var i = 0; i<heads.length;i++) {
-    document.write("<input type='radio' name='tool' id='", heads[i], "' ", i == 0 ? 'checked' : '' , ">");
-    document.write("<label for='", heads[i], "'>", heads[i], "</label>");
+var _hdd = $("#heads");
+
+for (var i = 0; i < heads.length; i++) {
+    _hdd.append("<input type='radio' name='tool' id='" + heads[i] + "' " + (i == 0 ? 'checked' : '') + ">");
+    _hdd.append("<label for='" + heads[i] + "'>" + heads[i] + "</label>");
 }
 
 var head = function (val) {

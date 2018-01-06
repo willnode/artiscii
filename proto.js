@@ -7,6 +7,10 @@ Point.prototype.clone = function () {
     return new Point(this.x, this.y);
 }
 
+Point.prototype.equals = function(obj) {
+    return this.x === obj.x && this.y === obj.y
+}
+
 var Rect = function (x, y, w, h) {
     this.x = x;
     this.y = y;
@@ -28,6 +32,9 @@ Rect.prototype.size = function () {
     return new Point(this.w, this.h);
 }
 
+Rect.prototype.equals = function(obj) {
+    return this.x === obj.x && this.y === obj.y && this.w === obj.w && this.h === obj.h;
+}
 
 function CanvasState(data, area, selection) {
     this.data = data;

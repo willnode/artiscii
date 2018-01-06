@@ -1,12 +1,12 @@
 var canvas = $('#canvas').get(0);
 
-var height, width, font, _headback, _seldown, _drgdown, _drwshot, _freeze;
+var height, width, font, _headback, _seldown, _drgdown, _drwshot, _dwned, _freeze;
 
 var ctx = canvas.getContext('2d');
 
 ctx.textBaseline = "top";
 
-var size = new Point(30, 20), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
+var size = new Point(100, 30), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
 
 var data = fill(''), undostack = [], palette = '';
 
@@ -29,7 +29,7 @@ $('#canvas').on('mousedown', (e) => {
     if (h === Tool.Dragdrop)
         _drgdown = selection.clone();
     else if (h === Tool.Line || h === Tool.Rectangle || h === Tool.Circle)
-        _drwshot = text();
+        _drwshot = data;
     else if (e.ctrlKey) {
         head(Tool.Dragdrop);
         _headback = Tool.Select;
@@ -37,49 +37,53 @@ $('#canvas').on('mousedown', (e) => {
     } else
         sels(new Rect(_seldown.x / width, _seldown.y / height, 1, 1));
 
-}).on('mousemove', (e) => {
+    _dwned = true;
+})
 
-    if (e.which !== 1) return;
+$(document).on('mousemove', (e) => {
+
+    if (!_dwned) return;
 
     var ms = getMousePos(e);
 
-    switch (head())
-    {
+    switch (head()) {
         case Tool.Select:
-            Selection = flexible(new Rect(_seldown.x / width, _seldown.y / height,
-                (ms.x - _seldown.x) / width, (ms.y - _seldown.y) / height));
+            sels(flexible(new Rect(_seldown.x / width, _seldown.y / height,
+                (ms.x - _seldown.x) / width, (ms.y - _seldown.y) / height)));
             break;
         case Tool.Freetype:
             break;
         case Tool.Dragdrop:
-            var sel = Selection;
-            sel.Location = new Point((ms.x - _seldown.x + _drgdown.x * width) / width, (ms.y - _seldown.y + _drgdown.y * height) / height);
-            Selection = sel;
+            sels(new Point((ms.x - _seldown.x + _drgdown.x * width) / width,
+                (ms.y - _seldown.y + _drgdown.y * height) / height))
             break;
         case Tool.Brush:
-            Selection = new Rect(ms.x / width, ms.y / height, 1, 1);
-            CharacterAt(Selection.Location, palette == '\0' ? ' ' : palette);
+            sels(new Rect(ms.x / width, ms.y / height, 1, 1));
+            charat(selection.location(), palette == '\0' ? ' ' : palette);
             break;
         case Tool.Line:
         case Tool.Rectangle:
         case Tool.Circle:
-            Selection = Flexible(new Rect(_seldown.x, _seldown.y,
-                    (ms.x / width - _seldown.x), (ms.y / height - _seldown.y)));
-            Array.Copy(_drwshot, characters, characters.Length);
-            switch (head())
-            {
+            sels(flexible(new Rect(_seldown.x, _seldown.y,
+                (ms.x / width - _seldown.x), (ms.y / height - _seldown.y))));
+
+            _freeze = true;
+            data = _drwshot;
+            switch (head()) {
                 case Tool.Line:
-                    DrawLine(new Point(ms.x / width, ms.y / height), _seldown);
+                    drawLine(new Point(ms.x / width, ms.y / height), _seldown);
                     break;
                 case Tool.Rectangle:
-                    DrawRectangle(new Point(ms.x / width, ms.y / height), _seldown);
+                    drawRectangle(new Point(ms.x / width, ms.y / height), _seldown);
                     break;
                 case Tool.Circle:
-                    DrawEllipse(new Point(ms.x / width, ms.y / height), _seldown);
+                    drawEllipse(new Point(ms.x / width, ms.y / height), _seldown);
                     break;
                 default:
                     break;
             }
+            _freeze = false;
+            redraw();
             break;
         default:
             break;
@@ -88,15 +92,17 @@ $('#canvas').on('mousedown', (e) => {
 
 $(document).on('mouseup', (e) => {
 
-    if (e.which !== 1) return;
+    if (!_dwned) return;
+
+    _dwned = false;
 
     var ms = getMousePos(e);
 
     if (head() === Tool.Dragdrop) {
-        _selection.Location = _drgdown;
+        sels(new Point((ms.x - _seldown.x + _drgdown.x * width) / width,
+            (ms.y - _seldown.y + _drgdown.y * height) / height));
         MoveSelected(new Point((ms.x - _seldown.x + _drgdown.x * width) / width, (ms.y - _seldown.y + _drgdown.y * height) / height));
-        if (_headback == Tool.Select)
-        {
+        if (_headback == Tool.Select) {
             head(Tool.Select);
             showcursor('default');
         }

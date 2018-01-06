@@ -5,15 +5,13 @@
   "main": "main.js",
   "license": "MIT",
   "scripts": {
-    "build?": "watchify main.js -o bundle.js",
-    "production?": "set NODE_ENV=production | browserify -g envify -e main.js | uglifyjs -c -m > bundle.js",
     "run": "http-server -c-1"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/jquery": "^3.2.16"
   },
-  "browser": {
-    "vue": "vue/dist/vue.common.js"
+  "preinstall": {
+    "script": "npm ls http-server -g || npm i http-server -g"
   }
 }

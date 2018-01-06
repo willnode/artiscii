@@ -56,5 +56,5 @@ textarea:::-moz-selection {
 }
 
 canvas {
-
+    border: 1px solid #07c
 }

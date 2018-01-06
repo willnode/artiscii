@@ -39,9 +39,8 @@ function getLineChar(start, end) {
 }
 
 /// Ramanujan's ellipse perimeter approx from ellipse radius
-function ellipsePerimeter(a, b)
-{
-    return Math.PI * (3 * (a + b) - Math.Sqrt((3 * a + b) * (a + 3 * b)));
+function ellipsePerimeter(a, b) {
+    return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
 }
 
 var fill = function (str, col, row) {
@@ -98,7 +97,11 @@ var curs = function (point) {
 
 var sels = function (rect) {
     if (rect !== undefined) {
-        selection = new Rect(Math.trunc(rect.x), Math.trunc(rect.y), Math.trunc(rect.w), Math.trunc(rect.h));
+        if (rect.w !== undefined && rect.h !== undefined) {
+            selection = new Rect(Math.trunc(rect.x), Math.trunc(rect.y), Math.trunc(rect.w), Math.trunc(rect.h));
+        } else
+            // just location
+            selection = new Rect(Math.trunc(rect.x), Math.trunc(rect.y), selection.w, selection.h);
         redraw();
     }
     else
@@ -129,7 +132,7 @@ var charsat = function (r, c) {
 
         for (var y = r.y; y < r.b;)
             data = data.substring(0, y * size.x + r.x) +
-                s.substr(y * size.x + r.x, r.w) +
+                c.substr(y * size.x + r.x, r.w) +
                 data.substring(++y * size.x + r.x);
 
         redraw();
@@ -311,20 +314,19 @@ var clearSelected = function () {
 var MoveSelected = function (dest) {
     if (selection.location().equals(dest)) return;
 
-    var txt = Copy();
+    var txt = copy();
     _freeze = true;
     clearSelected();
-    _selection.x = dest.x;
-    _selection.y = dest.y;
+    sels(dest);
     _freeze = false;
-    Paste(txt, false);
+    paste(txt, false);
 }
 
 var Backspace = function (drag) {
     if (drag) {
         var c = charsat(selection);
         var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
-        Array.Copy(c, 0, c, 1, cr - 1);
+        Array.copy(c, 0, c, 1, cr - 1);
         c[0] = ' ';
         charsat(selection, c);
     }
@@ -338,7 +340,7 @@ var Delete = function (drag) {
     if (drag) {
         var c = charsat(selection);
         var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
-        Array.Copy(c, cr + 1, c, cr, c.length - cr - 1);
+        Array.copy(c, cr + 1, c, cr, c.length - cr - 1);
         c[c.length - 1] = ' ';
         charsat(selection, c);
     }
@@ -352,14 +354,14 @@ var Insert = function (leftside) {
     if (leftside) {
         var c = charsat(selection);
         var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
-        Array.Copy(c, 1, c, 0, cr - 1);
+        Array.copy(c, 1, c, 0, cr - 1);
         c[c.length - 1] = ' ';
         charsat(selection, c);
     }
     else {
         var c = charsat(selection);
         var cr = (cursor.x - selection.x) + (cursor.y - selection.y) * selection.w;
-        Array.Copy(c, cr, c, cr + 1, c.length - cr - 1);
+        Array.copy(c, cr, c, cr + 1, c.length - cr - 1);
         c[cr] = ' ';
         charsat(selection, c);
     }
@@ -450,25 +452,25 @@ function makeState(area) {
 
     var sel = selection;
     _selection = area;
-    var r = new CanvasState(Copy(), area, sel);
+    var r = new CanvasState(copy(), area, sel);
     _selection = sel;
     return r;
 }
 
 function ApplyState(state) {
     _selection = state.area;
-    Paste(state.data, false);
+    paste(state.data, false);
     selection = state.selection;
 }
 
 var drawLine = function (A, B) {
     if (A == B) {
-        charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
+        charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
     var m, n;
     var D = new Point(A.x - B.x, A.y - B.y);
-    var L = Math.trunc(Math.Sqrt(D.x * D.x + D.y * D.y)) + 1;
+    var L = Math.trunc(Math.sqrt(D.x * D.x + D.y * D.y)) + 1;
     for (var i = 0; i <= L;) {
         m = new Point(A.x + ((B.x - A.x) * i) / L, A.y + ((B.y - A.y) * i) / L);
         do {
@@ -476,13 +478,13 @@ var drawLine = function (A, B) {
             n = new Point(A.x + ((B.x - A.x) * i) / L, A.y + ((B.y - A.y) * i) / L);
         } while (m == n); // avoid duplicate write
 
-        charat(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
+        charat(m, palette == '\0' ? getLineChar(m, n) : palette);
     }
 }
 
 var drawRectangle = function (A, B) {
     if (A == B) {
-        charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
+        charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
 
@@ -490,7 +492,7 @@ var drawRectangle = function (A, B) {
     drawLine(new Point(A.x, B.y), new Point(B.x, B.y));
     drawLine(new Point(A.x, A.y), new Point(A.x, B.y));
     drawLine(new Point(B.x, A.y), new Point(B.x, B.y));
-    var c = ToolArt == '\0' ? Utility.GetLineChar() : ToolArt;
+    var c = palette == '\0' ? getLineChar() : palette;
 
     charat(A, c);
     charat(B, c);
@@ -500,7 +502,7 @@ var drawRectangle = function (A, B) {
 
 var drawEllipse = function (A, B) {
     if (A == B) {
-        charat(A, ToolArt == '\0' ? Utility.GetLineChar() : ToolArt);
+        charat(A, palette == '\0' ? getLineChar() : palette);
         return;
     }
 
@@ -508,12 +510,12 @@ var drawEllipse = function (A, B) {
 
     if (a < 0) {
         xc += a * 2;
-        a = Math.Abs(a);
+        a = Math.abs(a);
     }
 
     if (b < 0) {
         yc += b * 2;
-        b = Math.Abs(b);
+        b = Math.abs(b);
     }
 
     xc += a;
@@ -540,7 +542,7 @@ var drawEllipse = function (A, B) {
     var incY = () => { y--; dyt += d2yt; t += dyt; };
 
     while (y >= 0 && x <= a) {
-        var character = ToolArt == '\0' ? Utility.GetLineChar() : ToolArt;
+        var character = palette == '\0' ? getLineChar() : palette;
         charat(xc + x, yc + y, character);
 
         if (x != 0 || y != 0) {
@@ -576,7 +578,7 @@ var drawEllipse = function (A, B) {
             n = new Point(C.x + Math.trunc(Math.cos(i / L * 2 * Math.PI) * D.x / 2), C.y + Math.trunc(Math.sin(i / L * 2 * Math.PI) * D.y / 2));
         } while (m == n && i <= L); // avoid duplicate write
 
-        charat(m, ToolArt == '\0' ? Utility.GetLineChar(m, n) : ToolArt);
+        charat(m, palette == '\0' ? getLineChar(m, n) : palette);
     }
 }
 
