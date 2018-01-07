@@ -4,8 +4,6 @@
 <head>
     <title>Artiscii</title>
     <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="jquery.min.js"></script>
-    <script src="jquery-ui.min.js"></script>
 </head>
 
 <body>
@@ -13,21 +11,26 @@
         <span id="heads">
         </span>
         <span id="palette">''</span>
-        <span>
-            <span id="resize">Resize</span>
+        <div id="resize">
+            <span>Resize</span>
             <div id="resize-p">
-                <input type="number" id="resize-x" value="100">x
-                <input type="number" id="resize-y" value="30">:
-                <input type="number" id="resize-px" value="12">px
-                <button id='resize-ok'>OK</button>
+                <div>
+                    <input type="number" id="resize-x" value="100"><span>&nbsp;&nbsp;x</span>
+                    <input type="number" id="resize-y" value="30">
+                </div>
+                <div>
+                    <input type="number" id="resize-px" value="12"><span>&nbsp;px</span>
+                    <button id='resize-ok'>OK</button>
+                </div>
             </div>
-        </span>
+        </div>
     </header>
     <canvas id="canvas" tabindex="0"></canvas>
-    <script src="head.js"></script>
-    <script src="proto.js"></script>
-    <script src="util.js"></script>
-    <script src="main.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/head.js"></script>
+    <script src="js/proto.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>

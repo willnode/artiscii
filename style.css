@@ -3,11 +3,14 @@
 }
 
 body {
-    font-family: Courier New, Courier, monospace
+    font-family: Courier New, Courier, monospace;
+    margin: 0px;
 }
 
 header {
-    margin: 10px 0px;
+    background: #222;
+    color: white;
+    padding: 10px 0px;
     user-select: none;
 }
 
@@ -15,46 +18,40 @@ header input[type='radio'] {
     display: none;
 }
 
-label {
+header label {
     margin: 1px 10px;
-    border: 1px solid white;
+    color: #555;
 }
 
 header :checked + label {
-    border: 1px solid black;
-}
-
-textarea {
-    overflow: hidden;
-    word-wrap: normal;
-    min-width: 10px;
-    resize: none;
-    padding: 0;
-    cursor: default;
-    white-space: nowrap;
-    border: 0px;
-}
-
-textarea::selection,
-textarea:::-moz-selection {
-    background-color: white;
+    color: #fff;
 }
 
 #resize-p {
-    display: inline-block;
-    white-space: nowrap;
+    background: #222;
+    color: white;
+    display: block;
+    position: absolute;
     overflow: hidden;
-    max-width: 0;
-    transition: max-width 0.3s ease-in;
+    margin: 5px;
+    max-height: 0;
+    transition: max-height 0.2s ease-in;
+}
+
+#resize {
+    display: inline-block;
 }
 
 #resize:hover > #resize-p {
-    max-width: 400px;
-    transition: max-width 0.3s ease-out;
+    max-height: 90px;
+    transition: max-height 0.2s ease-out;
 }
 
-#resize-p > input[type='number'] {
-    width: 100px;
+#resize-p > div {
+    margin: 6px 12px;
+}
+#resize-p input[type='number'], #resize-p button {
+    width: 50px;
 }
 
 #palette {
@@ -62,6 +59,7 @@ textarea:::-moz-selection {
 }
 
 canvas {
+    margin: 10px 0px;
     border: 1px solid black
 }
 
