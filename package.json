@@ -1,17 +1,15 @@
 {
   "name": "artiscii",
   "version": "0.2",
-  "description": "Web-based Artistic ASCII",
+  "description": "Artistic text tool made fun",
   "main": "main.js",
   "license": "MIT",
   "scripts": {
+    "bundle": "uglifyjs js/head.js js/proto.js js/util.js js/main.js -c -m -o bundle.js",
     "run": "http-server -c-1"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/jquery": "^3.2.16"
-  },
-  "preinstall": {
-    "script": "npm ls http-server -g || npm i http-server -g"
   }
 }

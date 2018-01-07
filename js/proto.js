@@ -1,3 +1,7 @@
+// primitives
+
+// point and rect
+
 var Point = function (x, y) {
     this.x = x;
     this.y = y;
@@ -54,6 +58,7 @@ Rect.prototype.trunc = function () {
     this.b = this.y + this.h;
 }
 
+// canvas state
 
 function CanvasState(data, area, selection) {
     this.data = data;

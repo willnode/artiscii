@@ -10,7 +10,7 @@ function getLineChar(start, end) {
         return '+';
     } else if (end !== undefined)
         start = ((Math.atan2(end.y - start.y, end.x - start.x)
-        * 180.0 / Math.PI + 360.0) % 360.0);
+            * 180.0 / Math.PI + 360.0) % 360.0);
 
     // interpret as degree
     var deg = start;
@@ -149,6 +149,20 @@ var charsat = function (r, c) {
     }
 }
 
+var restat = function () {
+    // mouse
+    var s = '● (' + _mouse.x + ", " + _mouse.y + ') ';
+    // cursor
+    if (head() === Tool.Freetype)
+        s += '● (' + cursor.x + ", " + cursor.y + ') ';
+    // selection
+    s += '□ (' + selection.x + ", " + selection.y + ') ';
+    // selection
+    if (!isCursorFree())
+        s += '◇ (' + selection.w + ", " + selection.h + ') ';
+    foot.text(s)
+}
+
 var redraw = function () {
     if (_freeze) return;
 
@@ -174,6 +188,9 @@ var resizeCanvas = function () {
     canvas.width = size.x * width;
     canvas.height = size.y * height;
     redraw();
+
+    // save size
+    localStorage.setItem(thisname + "-size", JSON.stringify({ x: size.x, y: size.y, px: height }));
 }
 
 var resizeCell = function (sz) {
@@ -212,15 +229,24 @@ var flexible = function (r) {
     return r;
 }
 
+var copy = function (r) {
+    r = r || selection;
+    r.trunc();
+    var s = '';
+    for (var y = r.y; y < r.b; y++)
+        s += data.substr(y * size.x + r.x, r.w) + '\n';
+    return s;
+}
+
 var paste = function (text, trim) {
-    text = text.replace("\r", "");
+    text = text.replace("\r", '');
     if (!text) { clearSelected(); return; }
 
     if (isCursorFree()) {
         var sel = selection;
         var w = 0, h = 0;
         for (var i = 0; i < text.length; i++) {
-            if (text[i] == '\n') {
+            if (text.charAt(i) === '\n') {
                 sel.w = Math.max(sel.w, w);
                 h++;
                 w = 0;
@@ -234,30 +260,12 @@ var paste = function (text, trim) {
         selection = sel;
     }
 
-    _freeze = true;
-    var intrimming = trim;
-    cursor = selection.location();
-    for (var i = 0; i < text.length; i++) {
-        if (intrimming && text.charCodeAt(i) <= 0x20)
-            continue;
-        intrimming = false;
-        if (append(text.charAt(i))) {
-            if (text[i] != '\n')
-                while (i < text.length && text.charCodeAt(i) !== '\n')
-                    i++;
-            else
-                intrimming = trim;
-
-        }
-    }
-    _freeze = false;
-    redraw();
-
+    charsat(selection, fill(text, selection.w, selection.h));
 }
 
 /// <returns>Return if the cursor just moves down</returns>
 var append = function (c) {
-    if (c == '\n') {
+    if (c === '\n') {
         gotoNextLine();
         return true;
     }
@@ -461,7 +469,7 @@ var Insert = function (leftside) {
 //     charsat(selection, dest);
 // }
 
-var isCursorFree = () => selection.w <= 1 && selection.h <= 1;
+var isCursorFree = function () { return selection.w <= 1 && selection.h <= 1 };
 
 var RecordUndo = function (state) {
     if (state === undefined)
@@ -585,8 +593,8 @@ var drawEllipse = function (A, B) {
     var d2xt = 2 * b2;
     var d2yt = 2 * a2;
 
-    var incX = () => { x++; dxt += d2xt; t += dxt; };
-    var incY = () => { y--; dyt += d2yt; t += dyt; };
+    var incX = function () { x++; dxt += d2xt; t += dxt; };
+    var incY = function () { y--; dyt += d2yt; t += dyt; };
 
     while (y >= 0 && x <= a) {
         var character = palette === '\0' ? getLineChar() : palette;

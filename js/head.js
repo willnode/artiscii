@@ -11,7 +11,7 @@ for (var i = 0; i < heads.length; i++) {
     _hdd.append("<label for='" + heads[i] + "'>" + heads[i] + "</label>");
 }
 
-$('input[name=tool]').on('click', () => head(head()));
+$('input[name=tool]').on('click', function() { head(head()) });
 
 var head = function (val) {
     if (val !== undefined) {

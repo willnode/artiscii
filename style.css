@@ -8,6 +8,9 @@ body {
 }
 
 header {
+    width: 100%;
+    position: fixed;
+    top: 0;
     background: #222;
     color: white;
     padding: 10px 0px;
@@ -59,10 +62,24 @@ header :checked + label {
 }
 
 canvas {
-    margin: 10px 0px;
+    margin: 45px 2px 40px 2px;
     border: 1px solid black
 }
 
 canvas:focus {
     border: 1px solid #07c
+}
+
+footer {
+    height: 35px;
+    line-height: 35px;
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    color: white;
+    background: #333;
+}
+
+a {
+    text-decoration: none;
 }

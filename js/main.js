@@ -1,19 +1,12 @@
-var canvas = $('#canvas').get(0), ctx = canvas.getContext('2d');
+var canvas = $('#canvas').get(0), ctx = canvas.getContext('2d'), foot = $('#status');
 
-var height, width, font, _headback, _seldown, _drgdown, _drwshot, _dwned, _freeze;
+var height, width, font, _headback, _seldown, _drgdown, _drwshot, _dwned, _freeze, _mouse = new Point(0, 0);
 
 var size = new Point(100, 30), selection = new Rect(0, 0, 1, 1), cursor = new Point(0, 0);
 
 var data = fill(''), undostack = [], palette = '\0';
 
-resizeFont(12);
-
-$('#resize-ok').on('click', () => {
-    resizeCell({ x: ~~$('#resize-x').val(), y: ~~$('#resize-y').val() });
-    resizeFont(~~$('#resize-px').val())
-})
-
-$(canvas).on('mousedown', (e) => {
+$(canvas).on('mousedown', function (e) {
 
     if (e.which !== 1) return;
 
@@ -21,7 +14,7 @@ $(canvas).on('mousedown', (e) => {
 
     var h = head();
 
-    _seldown = new Point(Math.floor(ms.x / width), Math.floor(ms.y / height));
+    _seldown = _mouse = new Point(Math.floor(ms.x / width), Math.floor(ms.y / height));
 
     if (h === Tool.Line || h === Tool.Rectangle || h === Tool.Circle)
         _drwshot = data;
@@ -42,15 +35,19 @@ $(canvas).on('mousedown', (e) => {
     }
 
     _dwned = true;
+    restat();
 })
 
-$(document).on('mousemove', (e) => {
-
-    if (!_dwned) return;
+$(document).on('mousemove', function (e) {
 
     var ms = getMousePos(e);
     ms.x = Math.trunc(ms.x / width);
     ms.y = Math.trunc(ms.y / height);
+    _mouse = ms;
+
+    restat();
+
+    if (!_dwned) return;
 
     switch (head()) {
         case Tool.Select:
@@ -93,7 +90,7 @@ $(document).on('mousemove', (e) => {
     }
 })
 
-$(document).on('mouseup', (e) => {
+$(document).on('mouseup', function (e) {
 
     if (!_dwned) return;
 
@@ -105,6 +102,8 @@ $(document).on('mouseup', (e) => {
         ms.x = Math.trunc(ms.x / width);
         ms.y = Math.trunc(ms.y / height);
 
+        restat();
+
         sels(_drgdown);
         MoveSelected(new Point(ms.x - _seldown.x + _drgdown.x, ms.y - _seldown.y + _drgdown.y));
         if (_headback == Tool.Select) {
@@ -114,9 +113,9 @@ $(document).on('mouseup', (e) => {
     }
 });
 
-$(canvas).on('keydown', (e) => {
+$(canvas).on('keydown', function (e) {
     var h = head();
-    if (e.keyCode == Key.Delete && h !== Tool.Freetype) {
+    if (e.keyCode === Key.Delete && h !== Tool.Freetype) {
         clearSelected();
         e.preventDefault();
         return;
@@ -126,11 +125,8 @@ $(canvas).on('keydown', (e) => {
             case Key.A:
                 sels(new Rect(0, 0, size.x, size.y));
                 break;
-            case Key.V:
-                Paste(Clipboard.GetText(TextDataFormat.UnicodeText), e.Shift);
-                break;
             case Key.C:
-                Clipboard.SetText(Copy(), TextDataFormat.UnicodeText);
+                systemcopy(copy());
                 break;
             case Key.Z:
                 Undo();
@@ -203,10 +199,31 @@ $(canvas).on('keydown', (e) => {
             e.preventDefault();
         }
     }
+
+    restat();
+
 })
 
-//$(document).on('ready', () => {
-// load from cookie
+$('#resize-ok').on('click', function () {
+    resizeCell({ x: ~~$('#resize-x').val(), y: ~~$('#resize-y').val() });
+    resizeFont(~~$('#resize-px').val())
+});
+
+//$('#copy-btn', )
+
+// load from storage
+//(function(){
+var statesize = localStorage.getItem(thisname + '-size');
+if (statesize) {
+    statesize = JSON.parse(statesize);
+    $('#resize-x').val(statesize.x);
+    $('#resize-y').val(statesize.y);
+    $('#resize-px').val(statesize.px);
+    resizeCell(new Point(statesize.x, statesize.y));
+    resizeFont(statesize.px);
+} else
+    resizeFont(12);
+
 var state = localStorage.getItem(thisname);
 if (state) {
     RecordUndo();
@@ -216,9 +233,27 @@ if (state) {
         new Rect(x.area.x, x.area.y, x.area.w, x.area.h),
         new Rect(x.selection.x, x.selection.y, x.selection.w, x.selection.h)));
 }
-//});
+//})();
 
-$(window).bind('beforeunload', () => {
+$(window).bind('beforeunload', function () {
     // save to cookie
     RecordUndo();
 })
+
+
+function systemcopy(target) {
+    // standard way of copying
+    var textArea = document.createElement('textarea');
+    textArea.setAttribute('style', 'width:1px;border:0;opacity:0;');
+    document.body.appendChild(textArea);
+    textArea.value = target;
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+}
+
+document.addEventListener('paste', function (e) {
+    if (e.clipboardData) {
+        paste(e.clipboardData.getData('text/plain'));
+    }
+});

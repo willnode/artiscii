@@ -4,16 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "watch bundle.js",
+            "label": "make bundle.js",
             "type": "shell",
-            "command": "yarn run build",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "production bundle.js",
-            "type": "shell",
-            "command": "yarn run production",
+            "command": "yarn run bundle",
             "group": "build",
             "problemMatcher": []
         },
