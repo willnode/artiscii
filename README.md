@@ -1,5 +1,7 @@
 # Artiscii
 
+![Screenshot](info/Screenshot.png)
+
 Artistic text creation made fun.
 
 [Try it!](http://wellosoft.net/artiscii)
@@ -30,3 +32,7 @@ To run http server (using Node.JS):
 npm i http-server -g
 http-server .
 ```
+
+## Tidbits
+
+[The Mario I drew in the screenshot above](https://gist.github.com/willnode/2d587ef80e081908e659f6cf26dae9eb)
