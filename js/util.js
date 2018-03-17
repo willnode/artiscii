@@ -160,7 +160,7 @@ var restat = function () {
     // selection
     if (!isCursorFree())
         s += '◇ (' + selection.w + ", " + selection.h + ') ';
-    foot.text(s)
+    foot.text(s + " " + undostack.length)
 }
 
 var redraw = function () {
@@ -261,6 +261,7 @@ var paste = function (text, trim) {
     }
 
     charsat(selection, fill(text, selection.w, selection.h));
+    RecordUndo();
 }
 
 /// <returns>Return if the cursor just moves down</returns>
@@ -472,7 +473,7 @@ var Insert = function (leftside) {
 var isCursorFree = function () { return selection.w <= 1 && selection.h <= 1 };
 
 var RecordUndo = function (state) {
-    if (state === undefined)
+    if (!state)
         state = makeState(true);
 
     if (undostack.length > 0 && undostack[undostack.length - 1].equals(state))
@@ -494,9 +495,8 @@ var Undo = function () {
             // do it again
             Undo();
         }
+        restat();
     }
-    //else
-    //  SystemSounds.Beep.Play();
 }
 
 function makeState(area) {

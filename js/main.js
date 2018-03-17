@@ -111,12 +111,15 @@ $(document).on('mouseup', function (e) {
             showcursor('default');
         }
     }
+
+    RecordUndo();
 });
 
 $(canvas).on('keydown', function (e) {
     var h = head();
     if (e.keyCode === Key.Delete && h !== Tool.Freetype) {
         clearSelected();
+        RecordUndo();
         e.preventDefault();
         return;
     }
@@ -167,6 +170,9 @@ $(canvas).on('keydown', function (e) {
                             gotoNextLine();
                     } else
                         gotoNextLine();
+                    break;
+                case Key.Escape:
+                    head(Tool.Select);
                     break;
                 case Key.Backspace:
                     Backspace(e.shiftKey);
@@ -233,7 +239,6 @@ if (state) {
         new Rect(x.area.x, x.area.y, x.area.w, x.area.h),
         new Rect(x.selection.x, x.selection.y, x.selection.w, x.selection.h)));
 }
-//})();
 
 $(window).bind('beforeunload', function () {
     // save to cookie
